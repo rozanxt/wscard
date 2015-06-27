@@ -2,5 +2,12 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.0.0/jar/lwjgl.jar" sourcepath="lib/lwjgl-3.0.0/src.zip">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/WSCard/lib/lwjgl-3.0.0/doc/javadoc.zip!/"/>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="WSCard/lib/lwjgl-3.0.0/native"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/zanlib/zanlib-0.2.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

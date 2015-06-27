@@ -1,0 +1,13 @@
+#version 330 core
+
+uniform mat4 projectionMatrix;
+uniform mat4 modelViewMatrix;
+
+in vec3 vertexPos;
+in vec2 texCoord;
+out vec4 textureCoord;
+
+void main() {
+	textureCoord = vec4(texCoord.s, texCoord.t, 0.0, 1.0);
+	gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPos.x, vertexPos.y, vertexPos.z, 1.0);
+}
