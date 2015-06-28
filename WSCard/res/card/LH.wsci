@@ -1,0 +1,15 @@
+ID: LH-T01
+NAME: Serara, Druid
+TYPE: CHARA
+COLOR: RED
+LEVEL: 0
+COST: 0
+POWER: 1000
+SOUL: 1
+TRIGGER: -
+TRAIT: Magic
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] ASSIST All your Characters in front of this gain +500 Power.
+FLAVORTEXT: Hurry up... and recover!
+IMAGE: res/img/card/LH/T01.png

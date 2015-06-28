@@ -1,8 +1,14 @@
 package zan.wscard.panel;
 
+import java.util.ArrayList;
+
 import zan.lib.panel.BasePanel;
+import zan.wscard.card.CardData;
+import zan.wscard.card.CardReader;
 
 public class GamePanel extends BasePanel {
+	
+	public ArrayList<CardData> lh;
 	
 	public GamePanel() {
 		
@@ -10,7 +16,8 @@ public class GamePanel extends BasePanel {
 	
 	@Override
 	public void init() {
-		
+		CardReader cr = new CardReader();
+		lh = cr.loadCardData("res/card/LH.wsci");
 	}
 	
 	@Override
