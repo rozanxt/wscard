@@ -1,7 +1,7 @@
-package zan.game.wscard.core;
+package zan.wscard.core;
 
-import zan.game.wscard.panel.GamePanel;
 import zan.lib.core.CoreEngine;
+import zan.wscard.panel.GamePanel;
 
 public class GameCore extends CoreEngine {
 	

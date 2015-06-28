@@ -1,4 +1,4 @@
-package zan.game.wscard.panel;
+package zan.wscard.panel;
 
 import zan.lib.panel.BasePanel;
 
