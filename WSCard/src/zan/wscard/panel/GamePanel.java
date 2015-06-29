@@ -65,21 +65,21 @@ public class GamePanel extends BasePanel {
 		shaderProgram.pushMatrix();
 		viewPort.adjustView(shaderProgram);
 		
-		// TODO FOR DEBUGGING TEXT RENDERING HAS MEMORY LEAKS
+		// TODO FOR DEBUGGING
 		for (int i=0;i<5;i++) {
 			shaderProgram.pushMatrix();
-			shaderProgram.multMatrix(MatUtil.translationMat44D(-350.0, 250.0-50.0*i, 0.0));
+			shaderProgram.multMatrix(MatUtil.translationMat44D(-350.0, 250.0-20.0*i, 0.0));
 			shaderProgram.multMatrix(MatUtil.rotationMat44D(0.0, 0.0, 0.0, 1.0));
-			shaderProgram.multMatrix(MatUtil.scaleMat44D(20.0, 20.0, 1.0));
+			shaderProgram.multMatrix(MatUtil.scaleMat44D(10.0, 12.0, 1.0));
 			TextManager.renderText(shaderProgram, gameServer.getPlayer(0).getPlayerCard(i).name, "defont");
 			shaderProgram.popMatrix();
 		}
 		
 		for (int i=0;i<5;i++) {
 			shaderProgram.pushMatrix();
-			shaderProgram.multMatrix(MatUtil.translationMat44D(-350.0, -50.0-50.0*i, 0.0));
+			shaderProgram.multMatrix(MatUtil.translationMat44D(-350.0, -180.0-20.0*i, 0.0));
 			shaderProgram.multMatrix(MatUtil.rotationMat44D(0.0, 0.0, 0.0, 1.0));
-			shaderProgram.multMatrix(MatUtil.scaleMat44D(20.0, 20.0, 1.0));
+			shaderProgram.multMatrix(MatUtil.scaleMat44D(10.0, 12.0, 1.0));
 			TextManager.renderText(shaderProgram, gameServer.getPlayer(1).getPlayerCard(i).name, "defont");
 			shaderProgram.popMatrix();
 		}
