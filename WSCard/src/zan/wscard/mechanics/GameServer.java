@@ -1,6 +1,7 @@
 package zan.wscard.mechanics;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 
 import zan.wscard.card.CardData;
@@ -20,9 +21,11 @@ public abstract class GameServer {
 	
 	public void initialPhase(ArrayList<CardData> testDeck) {
 		ArrayList<CardData> deckA = new ArrayList<CardData>();
-		for (int i=0;i<50;i++) deckA.add(testDeck.get(rnd.nextInt(20)));
+		for (int i=0;i<50;i++) deckA.add(testDeck.get(i));
 		ArrayList<CardData> deckB = new ArrayList<CardData>();
-		for (int i=0;i<50;i++) deckB.add(testDeck.get(rnd.nextInt(20)));
+		for (int i=0;i<50;i++) deckB.add(testDeck.get(i));
+		Collections.shuffle(deckA);
+		Collections.shuffle(deckB);
 		
 		playerA = new Player(0, "Player A", deckA);
 		playerB = new Player(1, "Player B", deckB);
