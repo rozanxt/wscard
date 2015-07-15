@@ -13,10 +13,14 @@ public class CardObject extends Sprite {
 		cardData = data;
 	}
 	
-	// TODO TEMPORARY METHOD
+	// TODO
 	public boolean isInShape(double sx, double sy) {
-		if (sx > posX-100.0*(500.0/730.0) && sx < posX+100.0*(500.0/730.0) && sy > 350.0 && sy < 550.0) return true;
+		if (sx > posX-0.5*scaleX*(500.0/730.0) && sx < posX+0.5*scaleX*(500.0/730.0) && sy > posY-0.5*scaleY && sy < posY+0.5*scaleY) return true;
 		return false;
+	}
+	
+	public CardData getCardData() {
+		return cardData;
 	}
 	
 }

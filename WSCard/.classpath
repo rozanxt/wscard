@@ -8,6 +8,6 @@
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="WSCard/lib/lwjgl-3.0.0/native"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/zanlib/zanlib-0.2.1b.jar"/>
+	<classpathentry kind="lib" path="lib/zanlib/zanlib-0.2.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

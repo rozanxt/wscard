@@ -1,12 +1,13 @@
 package zan.wscard.panel;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import zan.lib.gfx.ShaderProgram;
 import zan.lib.gfx.TextureManager;
 import zan.lib.gfx.obj.SpriteObject;
 import zan.lib.gfx.text.TextManager;
-import zan.lib.gfx.view.ViewPortScreen;
+import zan.lib.gfx.view.ViewPort2D;
 import zan.lib.input.InputManager;
 import zan.lib.math.matrix.MatUtil;
 import zan.lib.panel.BasePanel;
@@ -20,7 +21,95 @@ import zan.wscard.obj.CardObject;
 public class GamePanel extends BasePanel {
 	
 	private ShaderProgram shaderProgram;
-	private ViewPortScreen viewPort;
+	private ViewPort2D viewPort;
+	
+	private ArrayList<CardObject> handCards;
+	
+	private CardObject focusedCard;
+	
+	public GamePanel(GameCore core) {
+		viewPort = new ViewPort2D(0, 0, core.getScreenWidth(), core.getScreenHeight());
+	}
+	
+	@Override
+	public void init() {
+		shaderProgram = new ShaderProgram();
+		
+		viewPort.setHeightInterval(600.0);
+		viewPort.showView();
+		viewPort.projectView(shaderProgram);
+		
+		TextManager.loadFontFile(new ResourceReader("res/font/fonts.res").getData().getNode("defont"));
+		
+		Random rnd = new Random();
+		
+		CardReader cr = new CardReader();
+		ArrayList<CardData> cards = cr.loadCardData("res/card/LH.wsci");
+		
+		handCards = new ArrayList<CardObject>();
+		for (int i=0;i<5;i++) {
+			CardData c = cards.get(rnd.nextInt(20));
+			CardObject co = new CardObject(c, new SpriteObject(TextureManager.loadTexture(c.id, c.image), 500f, 730f));
+			co.setPos(-160.0+80.0*i, -240.0);
+			co.setScale(100.0);
+			handCards.add(co);
+		}
+		
+		focusedCard = null;
+	}
+	
+	@Override
+	public void destroy() {
+		shaderProgram.destroy();
+	}
+	
+	@Override
+	public void update(double time) {
+		focusedCard = null;
+		for (int i=0;i<handCards.size();i++) {
+			CardObject hc = handCards.get(i);
+			if (hc.isInShape(viewPort.getScreenToVirtualX(InputManager.getMouseX()), viewPort.getScreenToVirtualY(InputManager.getMouseY()))) {
+				focusedCard = hc;
+			}
+			hc.update();
+		}
+	}
+	
+	@Override
+	public void render(double ip) {
+		shaderProgram.bind();
+		shaderProgram.pushMatrix();
+		viewPort.adjustView(shaderProgram);
+		
+		for (int i=0;i<handCards.size();i++) handCards.get(i).render(shaderProgram, ip);
+		
+		if (focusedCard != null) {
+			shaderProgram.pushMatrix();
+			shaderProgram.translate(-400.0, 290.0, 0.0);
+			shaderProgram.scale(10.0, 10.0, 1.0);
+			TextManager.renderText(shaderProgram, focusedCard.getCardData().name, "defont");
+			shaderProgram.popMatrix();
+		}
+		
+		shaderProgram.popMatrix();
+		shaderProgram.unbind();
+	}
+	
+	@Override
+	public void onScreenResize(int width, int height) {
+		shaderProgram.bindState();
+		viewPort.setScreenSize(width, height);
+		viewPort.setViewPort(0, 0, width, height);
+		viewPort.showView();
+		viewPort.projectView(shaderProgram);
+	}
+	
+}
+
+/*public class GamePanel extends BasePanel {
+	
+	private ShaderProgram shaderProgram;
+	private ViewPort2D viewPort;
 	
 	private LocalGameServer gameServer;
 	
@@ -29,13 +118,15 @@ public class GamePanel extends BasePanel {
 	private int cardFocus;
 	
 	public GamePanel(GameCore core) {
-		viewPort = new ViewPortScreen(core.getScreenWidth(), core.getScreenHeight());
+		viewPort = new ViewPort2D(0, 0, core.getScreenWidth(), core.getScreenHeight());
 	}
 	
 	@Override
 	public void init() {
 		shaderProgram = new ShaderProgram();
 		
+		viewPort.setHeightInterval(300f);
+		viewPort.setOrigin(0f, 0f);
 		viewPort.showView();
 		viewPort.projectView(shaderProgram);
 		
@@ -88,13 +179,15 @@ public class GamePanel extends BasePanel {
 	public void render(double ip) {
 		shaderProgram.bind();
 		shaderProgram.pushMatrix();
+		
 		viewPort.adjustView(shaderProgram);
+		//shaderProgram.multMatrix(MatUtil.translationMat44D(-0.5f*viewPort.getHeightInterval()*viewPort.getScreenRatio(), -0.5f*viewPort.getHeightInterval(), 0f));
 		
 		shaderProgram.pushMatrix();
 		shaderProgram.multMatrix(MatUtil.translationMat44D(0.0, 0.0, 0.0));
 		shaderProgram.multMatrix(MatUtil.rotationMat44D(0.0, 0.0, 0.0, 1.0));
 		shaderProgram.multMatrix(MatUtil.scaleMat44D(10.0, 12.0, 1.0));
-		TextManager.renderText(shaderProgram, "MX: " + InputManager.getMouseX() + " " + "MY: " + InputManager.getMouseY(), "defont");
+		TextManager.renderText(shaderProgram, "MX: " + viewPort.getScreenToVirtualX((float)InputManager.getMouseX()) + " " + "MY: " + viewPort.getScreenToVirtualY((float)InputManager.getMouseY()), "defont");
 		shaderProgram.popMatrix();
 		
 		// TODO FOR DEBUGGING
@@ -179,4 +272,4 @@ public class GamePanel extends BasePanel {
 		viewPort.projectView(shaderProgram);
 	}
 	
-}
+}*/
