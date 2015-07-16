@@ -17,18 +17,21 @@ import zan.wscard.card.CardReader;
 import zan.wscard.core.GameCore;
 import zan.wscard.obj.CardField;
 import zan.wscard.obj.CardObject;
+import zan.wscard.obj.HandField;
+import zan.wscard.obj.StageField;
 
 public class GamePanel extends BasePanel {
 	
 	private ShaderProgram shaderProgram;
 	private ViewPort2D viewPort;
 	
-	private ArrayList<CardField> cardFields;
-	private ArrayList<CardObject> handCards;
+	private HandField handField;
+	private ArrayList<StageField> stageFields;
+	
+	private ArrayList<CardObject> gameCards;
 	
 	private CardObject focusedCard;
 	private CardObject heldCard;
-	
 	private Vec2D heldOffset;
 	
 	public GamePanel(GameCore core) {
@@ -50,28 +53,31 @@ public class GamePanel extends BasePanel {
 		CardReader cr = new CardReader();
 		ArrayList<CardData> cards = cr.loadCardData("res/card/LH.wsci");
 		
-		cardFields = new ArrayList<CardField>();
+		handField = new HandField();
+		stageFields = new ArrayList<StageField>();
 		for (int i=0;i<3;i++) {
-			CardField cf = new CardField();
+			StageField cf = new StageField();
 			cf.setPos(-80.0+80.0*i, 0.0);
-			cf.setScale(100.0);
-			cardFields.add(cf);
+			cf.setSize(100.0);
+			stageFields.add(cf);
 		}
 		for (int i=0;i<2;i++) {
-			CardField cf = new CardField();
+			StageField cf = new StageField();
 			cf.setPos(-40.0+80.0*i, -110.0);
-			cf.setScale(100.0);
-			cardFields.add(cf);
+			cf.setSize(100.0);
+			stageFields.add(cf);
 		}
 		
-		handCards = new ArrayList<CardObject>();
+		gameCards = new ArrayList<CardObject>();
 		for (int i=0;i<5;i++) {
 			CardData c = cards.get(rnd.nextInt(20));
 			CardObject co = new CardObject(c, new SpriteObject(TextureManager.loadTexture(c.id, c.image), 500f, 730f));
-			co.setAnchor(-160.0+80.0*i, -240.0);
-			co.setPos(-160.0+80.0*i, -240.0);
-			co.setScale(100.0);
-			handCards.add(co);
+			co.setAnchor(-(40.0*(5-1))+80.0*i, -240.0);
+			co.setPos(-(40.0*(5-1))+80.0*i, -240.0);
+			co.setSize(100.0);
+			co.setField(handField);
+			handField.addCard(co);
+			gameCards.add(co);
 		}
 		
 		focusedCard = null;
@@ -82,6 +88,8 @@ public class GamePanel extends BasePanel {
 	@Override
 	public void destroy() {
 		shaderProgram.destroy();
+		for (int i=0;i<stageFields.size();i++) stageFields.get(i).destroy();
+		for (int i=0;i<gameCards.size();i++) gameCards.get(i).destroy();
 	}
 	
 	@Override
@@ -89,15 +97,9 @@ public class GamePanel extends BasePanel {
 		double mouseX = viewPort.getScreenToVirtualX(InputManager.getMouseX());
 		double mouseY = viewPort.getScreenToVirtualY(InputManager.getMouseY());
 		
-		for (int i=0;i<cardFields.size();i++) {
-			CardField cf = cardFields.get(i);
-			cf.isInBound(mouseX, mouseY);
-			cf.update();
-		}
-		
 		focusedCard = null;
-		for (int i=0;i<handCards.size();i++) {
-			CardObject hc = handCards.get(i);
+		for (int i=0;i<gameCards.size();i++) {
+			CardObject hc = gameCards.get(i);
 			hc.toggleAnchor(true);
 			if (hc.isInBound(viewPort.getScreenToVirtualX(InputManager.getMouseX()), viewPort.getScreenToVirtualY(InputManager.getMouseY()))) {
 				focusedCard = hc;
@@ -108,13 +110,54 @@ public class GamePanel extends BasePanel {
 			}
 		}
 		
-		if (InputManager.isMouseReleased(InputManager.IM_MOUSE_BUTTON_1)) heldCard = null;
+		if (heldCard != null && InputManager.isMouseReleased(InputManager.IM_MOUSE_BUTTON_1)) {
+			boolean inField = false; // TODO
+			for (int i=0;i<stageFields.size();i++) {
+				StageField cf = stageFields.get(i);
+				if (cf.isInBound(mouseX, mouseY)) {
+					CardField previousField = heldCard.getField();
+					if (previousField != null) {
+						if (previousField instanceof HandField) {
+							if (cf.getCard() == null) {
+								HandField hf = (HandField)previousField;
+								hf.removeCard(heldCard);
+								heldCard.setField(cf);
+								cf.setCard(heldCard);
+								inField = true;
+							}
+						} else if (previousField instanceof StageField) {
+							StageField sf = (StageField)previousField;
+							sf.setCard(cf.getCard());
+							if (cf.getCard() != null) cf.getCard().setField(previousField);
+							heldCard.setField(cf);
+							cf.setCard(heldCard);
+							inField = true;
+						}
+					}
+				}
+			}
+			if (!inField) {
+				CardField previousField = heldCard.getField();
+				if (previousField != null) {
+					if (previousField instanceof StageField) {
+						StageField sf = (StageField)previousField;
+						sf.setCard(null);
+						heldCard.setField(handField);
+						handField.addCard(heldCard);
+					}
+				}
+			}
+			heldCard = null;
+		}
 		if (heldCard != null) {
 			heldCard.toggleAnchor(false);
 			heldCard.setPos(mouseX - heldOffset.getX(), mouseY - heldOffset.getY());
 		}
 		
-		for (int i=0;i<handCards.size();i++) handCards.get(i).update();
+		for (int i=0;i<stageFields.size();i++) {stageFields.get(i).isInBound(mouseX, mouseY);}
+		
+		handField.anchorCards();
+		for (int i=0;i<gameCards.size();i++) gameCards.get(i).update();
 	}
 	
 	@Override
@@ -123,8 +166,9 @@ public class GamePanel extends BasePanel {
 		shaderProgram.pushMatrix();
 		viewPort.adjustView(shaderProgram);
 		
-		for (int i=0;i<cardFields.size();i++) cardFields.get(i).render(shaderProgram, ip);
-		for (int i=0;i<handCards.size();i++) handCards.get(i).render(shaderProgram, ip);
+		for (int i=0;i<stageFields.size();i++) stageFields.get(i).render(shaderProgram);
+		for (int i=0;i<gameCards.size();i++) if (heldCard != gameCards.get(i)) gameCards.get(i).render(shaderProgram, ip);
+		if (heldCard != null) heldCard.render(shaderProgram, ip);
 		
 		if (focusedCard != null) {
 			shaderProgram.pushMatrix();
