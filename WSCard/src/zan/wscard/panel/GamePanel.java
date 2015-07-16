@@ -9,6 +9,7 @@ import zan.lib.gfx.obj.SpriteObject;
 import zan.lib.gfx.text.TextManager;
 import zan.lib.gfx.view.ViewPort2D;
 import zan.lib.input.InputManager;
+import zan.lib.math.vector.Vec2D;
 import zan.lib.panel.BasePanel;
 import zan.lib.res.ResourceReader;
 import zan.wscard.card.CardData;
@@ -26,6 +27,9 @@ public class GamePanel extends BasePanel {
 	private ArrayList<CardObject> handCards;
 	
 	private CardObject focusedCard;
+	private CardObject heldCard;
+	
+	private Vec2D heldOffset;
 	
 	public GamePanel(GameCore core) {
 		viewPort = new ViewPort2D(0, 0, core.getScreenWidth(), core.getScreenHeight());
@@ -64,12 +68,15 @@ public class GamePanel extends BasePanel {
 		for (int i=0;i<5;i++) {
 			CardData c = cards.get(rnd.nextInt(20));
 			CardObject co = new CardObject(c, new SpriteObject(TextureManager.loadTexture(c.id, c.image), 500f, 730f));
+			co.setAnchor(-160.0+80.0*i, -240.0);
 			co.setPos(-160.0+80.0*i, -240.0);
 			co.setScale(100.0);
 			handCards.add(co);
 		}
 		
 		focusedCard = null;
+		heldCard = null;
+		heldOffset = new Vec2D();
 	}
 	
 	@Override
@@ -79,20 +86,35 @@ public class GamePanel extends BasePanel {
 	
 	@Override
 	public void update(double time) {
+		double mouseX = viewPort.getScreenToVirtualX(InputManager.getMouseX());
+		double mouseY = viewPort.getScreenToVirtualY(InputManager.getMouseY());
+		
 		for (int i=0;i<cardFields.size();i++) {
 			CardField cf = cardFields.get(i);
-			cf.isInBound(viewPort.getScreenToVirtualX(InputManager.getMouseX()), viewPort.getScreenToVirtualY(InputManager.getMouseY()));
+			cf.isInBound(mouseX, mouseY);
 			cf.update();
 		}
 		
 		focusedCard = null;
 		for (int i=0;i<handCards.size();i++) {
 			CardObject hc = handCards.get(i);
+			hc.toggleAnchor(true);
 			if (hc.isInBound(viewPort.getScreenToVirtualX(InputManager.getMouseX()), viewPort.getScreenToVirtualY(InputManager.getMouseY()))) {
 				focusedCard = hc;
+				if (InputManager.isMousePressed(InputManager.IM_MOUSE_BUTTON_1)) {
+					heldCard = hc;
+					heldOffset.setComponents(mouseX - hc.getAnchorX(), mouseY - hc.getAnchorY());
+				}
 			}
-			hc.update();
 		}
+		
+		if (InputManager.isMouseReleased(InputManager.IM_MOUSE_BUTTON_1)) heldCard = null;
+		if (heldCard != null) {
+			heldCard.toggleAnchor(false);
+			heldCard.setPos(mouseX - heldOffset.getX(), mouseY - heldOffset.getY());
+		}
+		
+		for (int i=0;i<handCards.size();i++) handCards.get(i).update();
 	}
 	
 	@Override

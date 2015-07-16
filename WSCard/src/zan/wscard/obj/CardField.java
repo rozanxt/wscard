@@ -10,7 +10,7 @@ public class CardField extends BaseSprite {
 	
 	protected VertexObject vObj;
 	
-	private boolean inBound;
+	protected boolean inBound;
 	
 	public CardField() {
 		final int[] ind = {0, 1, 2, 3};
