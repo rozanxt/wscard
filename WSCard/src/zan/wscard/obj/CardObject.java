@@ -14,7 +14,7 @@ public class CardObject extends Sprite {
 	}
 	
 	// TODO
-	public boolean isInShape(double sx, double sy) {
+	public boolean isInBound(double sx, double sy) {
 		if (sx > posX-0.5*scaleX*(500.0/730.0) && sx < posX+0.5*scaleX*(500.0/730.0) && sy > posY-0.5*scaleY && sy < posY+0.5*scaleY) return true;
 		return false;
 	}

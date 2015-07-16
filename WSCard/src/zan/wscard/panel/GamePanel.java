@@ -9,13 +9,12 @@ import zan.lib.gfx.obj.SpriteObject;
 import zan.lib.gfx.text.TextManager;
 import zan.lib.gfx.view.ViewPort2D;
 import zan.lib.input.InputManager;
-import zan.lib.math.matrix.MatUtil;
 import zan.lib.panel.BasePanel;
 import zan.lib.res.ResourceReader;
 import zan.wscard.card.CardData;
 import zan.wscard.card.CardReader;
 import zan.wscard.core.GameCore;
-import zan.wscard.mechanics.LocalGameServer;
+import zan.wscard.obj.CardField;
 import zan.wscard.obj.CardObject;
 
 public class GamePanel extends BasePanel {
@@ -23,6 +22,7 @@ public class GamePanel extends BasePanel {
 	private ShaderProgram shaderProgram;
 	private ViewPort2D viewPort;
 	
+	private ArrayList<CardField> cardFields;
 	private ArrayList<CardObject> handCards;
 	
 	private CardObject focusedCard;
@@ -46,6 +46,20 @@ public class GamePanel extends BasePanel {
 		CardReader cr = new CardReader();
 		ArrayList<CardData> cards = cr.loadCardData("res/card/LH.wsci");
 		
+		cardFields = new ArrayList<CardField>();
+		for (int i=0;i<3;i++) {
+			CardField cf = new CardField();
+			cf.setPos(-80.0+80.0*i, 0.0);
+			cf.setScale(100.0);
+			cardFields.add(cf);
+		}
+		for (int i=0;i<2;i++) {
+			CardField cf = new CardField();
+			cf.setPos(-40.0+80.0*i, -110.0);
+			cf.setScale(100.0);
+			cardFields.add(cf);
+		}
+		
 		handCards = new ArrayList<CardObject>();
 		for (int i=0;i<5;i++) {
 			CardData c = cards.get(rnd.nextInt(20));
@@ -65,10 +79,16 @@ public class GamePanel extends BasePanel {
 	
 	@Override
 	public void update(double time) {
+		for (int i=0;i<cardFields.size();i++) {
+			CardField cf = cardFields.get(i);
+			cf.isInBound(viewPort.getScreenToVirtualX(InputManager.getMouseX()), viewPort.getScreenToVirtualY(InputManager.getMouseY()));
+			cf.update();
+		}
+		
 		focusedCard = null;
 		for (int i=0;i<handCards.size();i++) {
 			CardObject hc = handCards.get(i);
-			if (hc.isInShape(viewPort.getScreenToVirtualX(InputManager.getMouseX()), viewPort.getScreenToVirtualY(InputManager.getMouseY()))) {
+			if (hc.isInBound(viewPort.getScreenToVirtualX(InputManager.getMouseX()), viewPort.getScreenToVirtualY(InputManager.getMouseY()))) {
 				focusedCard = hc;
 			}
 			hc.update();
@@ -81,6 +101,7 @@ public class GamePanel extends BasePanel {
 		shaderProgram.pushMatrix();
 		viewPort.adjustView(shaderProgram);
 		
+		for (int i=0;i<cardFields.size();i++) cardFields.get(i).render(shaderProgram, ip);
 		for (int i=0;i<handCards.size();i++) handCards.get(i).render(shaderProgram, ip);
 		
 		if (focusedCard != null) {
