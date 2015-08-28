@@ -12,7 +12,7 @@ public class HandField extends CardField {
 	
 	public void anchorCards() {
 		for (int i=0;i<handCards.size();i++) {
-			handCards.get(i).setAnchor(-(40.0*(handCards.size()-1))+80.0*i, -240.0);
+			handCards.get(i).setAnchor(-(30.0*(handCards.size()-1))+60.0*i, -240.0);
 		}
 	}
 	

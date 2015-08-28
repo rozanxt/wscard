@@ -1,0 +1,64 @@
+package zan.wscard.mechanics;
+
+import java.util.ArrayList;
+
+import zan.wscard.card.CardData;
+
+public abstract class GameClient {
+	
+	protected PlayerClient playerA, playerB;
+	
+	protected int clientID;
+	protected boolean clientTurn;
+	
+	public GameClient(int cid) {
+		clientID = cid;
+		clientTurn = false;
+	}
+	
+	public void init(ArrayList<CardData> deckA, ArrayList<CardData> deckB) {
+		playerA = new PlayerClient(0, "Player A", deckA);
+		playerB = new PlayerClient(1, "Player B", deckB);
+	}
+	
+	public void update() {
+		String msg = getClientInbox();
+		while (msg != null && !msg.isEmpty()) {
+			String[] tkns = msg.split(" ");
+			
+			if (tkns[0].contentEquals("HAND")) {
+				ArrayList<Integer> cards = new ArrayList<Integer>();
+				for (int i=1;i<tkns.length;i++) cards.add(Integer.parseInt(tkns[i]));
+				getClientPlayer().syncHand(cards);
+				
+				for (int i=0;i<getClientPlayer().getPlayerHand().size();i++) {
+					System.out.print(getClientPlayer().getPlayerHand().get(i));
+				}
+				System.out.print("\n");
+			}
+			if (tkns[0].contentEquals("DRAW")) {
+				for (int i=1;i<tkns.length;i++) System.out.println(Integer.parseInt(tkns[i]));
+			}
+			if (tkns[0].contentEquals("TURN")) {
+				if (Integer.parseInt(tkns[1]) == clientID) clientTurn = true;
+				else clientTurn = false;
+			}
+			
+			msg = getClientInbox();
+		}
+	}
+	
+	public boolean isInTurn() {
+		return clientTurn;
+	}
+	
+	public PlayerClient getClientPlayer() {
+		if (playerA.getPlayerID() == clientID) return playerA;
+		if (playerB.getPlayerID() == clientID) return playerB;
+		return null;
+	}
+	
+	protected abstract String getClientInbox();
+	public abstract void writeToServer(String msg);
+	
+}

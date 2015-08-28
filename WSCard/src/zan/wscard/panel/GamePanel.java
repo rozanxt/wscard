@@ -1,7 +1,6 @@
 package zan.wscard.panel;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import zan.lib.gfx.ShaderProgram;
 import zan.lib.gfx.TextureManager;
@@ -15,6 +14,8 @@ import zan.lib.res.ResourceReader;
 import zan.wscard.card.CardData;
 import zan.wscard.card.CardReader;
 import zan.wscard.core.GameCore;
+import zan.wscard.mechanics.LocalGameClient;
+import zan.wscard.mechanics.LocalGameServer;
 import zan.wscard.obj.CardField;
 import zan.wscard.obj.CardObject;
 import zan.wscard.obj.HandField;
@@ -25,14 +26,21 @@ public class GamePanel extends BasePanel {
 	private ShaderProgram shaderProgram;
 	private ViewPort2D viewPort;
 	
+	private LocalGameServer gameServer;
+	private LocalGameClient clientA;
+	private LocalGameClient clientB;
+	
 	private HandField handField;
 	private ArrayList<StageField> stageFields;
+	private ArrayList<StageField> stageFields2;
 	
 	private ArrayList<CardObject> gameCards;
 	
 	private CardObject focusedCard;
 	private CardObject heldCard;
 	private Vec2D heldOffset;
+	
+	private static final double cardSize = 80.0;
 	
 	public GamePanel(GameCore core) {
 		viewPort = new ViewPort2D(0, 0, core.getScreenWidth(), core.getScreenHeight());
@@ -58,30 +66,57 @@ public class GamePanel extends BasePanel {
 				deckCards.add(LHCards.get(i));
 			}
 		}
-		Collections.shuffle(deckCards);
+		
+		gameServer = new LocalGameServer();
+		clientA = new LocalGameClient(gameServer, 0);
+		clientB = new LocalGameClient(gameServer, 1);
+		gameServer.addClient(clientA);
+		gameServer.addClient(clientB);
+		
+		gameServer.init(deckCards, deckCards);
+		clientA.init(deckCards, deckCards);
+		clientB.init(deckCards, deckCards);
+		
+		clientA.writeToServer("REQ_HAND");
+		gameServer.update();
+		clientA.update();
 		
 		handField = new HandField();
 		stageFields = new ArrayList<StageField>();
 		for (int i=0;i<3;i++) {
 			StageField cf = new StageField();
-			cf.setPos(-80.0+80.0*i, 0.0);
-			cf.setSize(100.0);
+			cf.setPos(-60.0+60.0*i, -50.0);
+			cf.setSize(cardSize);
 			stageFields.add(cf);
 		}
 		for (int i=0;i<2;i++) {
 			StageField cf = new StageField();
-			cf.setPos(-40.0+80.0*i, -110.0);
-			cf.setSize(100.0);
+			cf.setPos(-30.0+60.0*i, -135.0);
+			cf.setSize(cardSize);
 			stageFields.add(cf);
 		}
 		
+		stageFields2 = new ArrayList<StageField>();
+		for (int i=0;i<3;i++) {
+			StageField cf = new StageField();
+			cf.setPos(-60.0+60.0*i, 50.0);
+			cf.setSize(cardSize);
+			stageFields2.add(cf);
+		}
+		for (int i=0;i<2;i++) {
+			StageField cf = new StageField();
+			cf.setPos(-30.0+60.0*i, 135.0);
+			cf.setSize(cardSize);
+			stageFields2.add(cf);
+		}
+		
 		gameCards = new ArrayList<CardObject>();
-		for (int i=0;i<5;i++) {
-			CardData c = deckCards.remove(0);
+		for (int i=0;i<clientA.getClientPlayer().getPlayerHand().size();i++) {
+			CardData c = clientA.getClientPlayer().getCardData(clientA.getClientPlayer().getPlayerHand().get(i));
 			CardObject co = new CardObject(c, new SpriteObject(TextureManager.loadTexture(c.id, c.image), 500f, 730f));
-			co.setAnchor(-(40.0*(5-1))+80.0*i, -240.0);
-			co.setPos(-(40.0*(5-1))+80.0*i, -240.0);
-			co.setSize(100.0);
+			co.setAnchor(-(30.0*(5-1))+60.0*i, -240.0);
+			co.setPos(-(30.0*(5-1))+60.0*i, -240.0);
+			co.setSize(cardSize);
 			co.setField(handField);
 			handField.addCard(co);
 			gameCards.add(co);
@@ -96,6 +131,7 @@ public class GamePanel extends BasePanel {
 	public void destroy() {
 		shaderProgram.destroy();
 		for (int i=0;i<stageFields.size();i++) stageFields.get(i).destroy();
+		for (int i=0;i<stageFields2.size();i++) stageFields2.get(i).destroy();
 		for (int i=0;i<gameCards.size();i++) gameCards.get(i).destroy();
 	}
 	
@@ -162,6 +198,7 @@ public class GamePanel extends BasePanel {
 		}
 		
 		for (int i=0;i<stageFields.size();i++) {stageFields.get(i).isInBound(mouseX, mouseY);}
+		for (int i=0;i<stageFields2.size();i++) {stageFields2.get(i).isInBound(mouseX, mouseY);}
 		
 		handField.anchorCards();
 		for (int i=0;i<gameCards.size();i++) gameCards.get(i).update();
@@ -174,6 +211,7 @@ public class GamePanel extends BasePanel {
 		viewPort.adjustView(shaderProgram);
 		
 		for (int i=0;i<stageFields.size();i++) stageFields.get(i).render(shaderProgram);
+		for (int i=0;i<stageFields2.size();i++) stageFields2.get(i).render(shaderProgram);
 		for (int i=0;i<gameCards.size();i++) if (heldCard != gameCards.get(i)) gameCards.get(i).render(shaderProgram, ip);
 		if (heldCard != null) heldCard.render(shaderProgram, ip);
 		
