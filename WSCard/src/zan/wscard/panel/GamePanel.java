@@ -1,6 +1,7 @@
 package zan.wscard.panel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import zan.lib.gfx.ShaderProgram;
 import zan.lib.gfx.TextureManager;
@@ -41,6 +42,9 @@ public class GamePanel extends BasePanel {
 	private Vec2D heldOffset;
 	
 	private static final double cardSize = 80.0;
+	private int drawDelay;
+	
+	private HashMap<String, Integer> cardSprites;
 	
 	public GamePanel(GameCore core) {
 		viewPort = new ViewPort2D(0, 0, core.getScreenWidth(), core.getScreenHeight());
@@ -76,10 +80,7 @@ public class GamePanel extends BasePanel {
 		gameServer.init(deckCards, deckCards);
 		clientA.init(deckCards, deckCards);
 		clientB.init(deckCards, deckCards);
-		
 		clientA.writeToServer("REQ_HAND");
-		gameServer.update();
-		clientA.update();
 		
 		handField = new HandField();
 		stageFields = new ArrayList<StageField>();
@@ -111,20 +112,18 @@ public class GamePanel extends BasePanel {
 		}
 		
 		gameCards = new ArrayList<CardObject>();
-		for (int i=0;i<clientA.getClientPlayer().getPlayerHand().size();i++) {
-			CardData c = clientA.getClientPlayer().getCardData(clientA.getClientPlayer().getPlayerHand().get(i));
-			CardObject co = new CardObject(c, new SpriteObject(TextureManager.loadTexture(c.id, c.image), 500f, 730f));
-			co.setAnchor(-(30.0*(5-1))+60.0*i, -240.0);
-			co.setPos(-(30.0*(5-1))+60.0*i, -240.0);
-			co.setSize(cardSize);
-			co.setField(handField);
-			handField.addCard(co);
-			gameCards.add(co);
-		}
 		
 		focusedCard = null;
 		heldCard = null;
 		heldOffset = new Vec2D();
+		
+		drawDelay = 0;
+		
+		cardSprites = new HashMap<String, Integer>();
+		for (int i=0;i<LHCards.size();i++) {
+			CardData c = LHCards.get(i);
+			cardSprites.put(c.image, TextureManager.loadTexture(c.id, c.image));
+		}
 	}
 	
 	@Override
@@ -137,6 +136,33 @@ public class GamePanel extends BasePanel {
 	
 	@Override
 	public void update(double time) {
+		
+		if (InputManager.isKeyReleased(InputManager.IM_KEY_1)) clientA.writeToServer("READY");
+		if (InputManager.isKeyReleased(InputManager.IM_KEY_2)) clientB.writeToServer("READY");
+		
+		if (drawDelay == 0) {
+			int drawn = clientA.getClientPlayer().getDrawnCard();
+			if (drawn != -1) {
+				CardData c = clientA.getClientPlayer().getCardData(drawn);
+				CardObject co = new CardObject(c, new SpriteObject(cardSprites.get(c.image), 500f, 730f));
+				co.setAnchor(300.0, -60.0);
+				co.setPos(300.0, -60.0);
+				co.setSize(cardSize);
+				co.setField(handField);
+				handField.addCard(co);
+				gameCards.add(co);
+				
+				drawDelay = 10;
+			}
+		} else {
+			drawDelay--;
+		}
+		
+		gameServer.update();
+		clientA.update();
+		clientB.update();
+		
+		
 		double mouseX = viewPort.getScreenToVirtualX(InputManager.getMouseX());
 		double mouseY = viewPort.getScreenToVirtualY(InputManager.getMouseY());
 		

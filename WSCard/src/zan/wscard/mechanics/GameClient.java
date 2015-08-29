@@ -26,18 +26,10 @@ public abstract class GameClient {
 		while (msg != null && !msg.isEmpty()) {
 			String[] tkns = msg.split(" ");
 			
-			if (tkns[0].contentEquals("HAND")) {
-				ArrayList<Integer> cards = new ArrayList<Integer>();
-				for (int i=1;i<tkns.length;i++) cards.add(Integer.parseInt(tkns[i]));
-				getClientPlayer().syncHand(cards);
-				
-				for (int i=0;i<getClientPlayer().getPlayerHand().size();i++) {
-					System.out.print(getClientPlayer().getPlayerHand().get(i));
-				}
-				System.out.print("\n");
-			}
 			if (tkns[0].contentEquals("DRAW")) {
-				for (int i=1;i<tkns.length;i++) System.out.println(Integer.parseInt(tkns[i]));
+				ArrayList<Integer> drawn = new ArrayList<Integer>();
+				for (int i=1;i<tkns.length;i++) drawn.add(Integer.parseInt(tkns[i]));
+				getClientPlayer().drawCard(drawn);
 			}
 			if (tkns[0].contentEquals("TURN")) {
 				if (Integer.parseInt(tkns[1]) == clientID) clientTurn = true;

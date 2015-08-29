@@ -8,6 +8,8 @@ public abstract class GameServer {
 	
 	protected PlayerServer playerA, playerB;
 	
+	protected boolean gameStart;
+	protected boolean readyA, readyB;
 	protected int playerTurn;
 	
 	public void init(ArrayList<CardData> deckA, ArrayList<CardData> deckB) {
@@ -15,10 +17,24 @@ public abstract class GameServer {
 		playerB = new PlayerServer(1, "Player B", deckB);
 		playerA.init();
 		playerB.init();
+		
+		gameStart = false;
+		readyA = false;
+		readyB = false;
+		playerTurn = 0;
+	}
+	
+	protected void initialPhase() {
+		gameStart = true;
+		
 		drawCard(0, 5);
 		drawCard(1, 5);
 		
 		playerTurn = 0;
+		standUpAndDrawPhase();
+	}
+	
+	public void standUpAndDrawPhase() {
 		writeToClient(playerTurn, "TURN " + playerTurn);
 		getPlayerInTurn().doStandUp();
 		drawCard(playerTurn, 1);
@@ -30,6 +46,11 @@ public abstract class GameServer {
 			String[] tkns = msg.split(" ");
 			int cid = Integer.parseInt(tkns[0]);
 			
+			if (!gameStart && tkns[1].contentEquals("READY")) {
+				if (cid == 0) readyA = true;
+				else if (cid == 1) readyB = true;
+				if (readyA && readyB) initialPhase();
+			}
 			if (tkns[1].contentEquals("REQ_HAND")) {
 				ArrayList<Integer> hand = getPlayer(cid).getPlayerHand();
 				String m = "HAND";
