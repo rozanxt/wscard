@@ -8,6 +8,9 @@ import zan.wscard.card.CardData;
 
 public class CardObject {
 	
+	protected int cardID;
+	protected int cardState;
+	
 	protected CardData cardData;
 	protected CardField cardField;
 	
@@ -19,7 +22,9 @@ public class CardObject {
 	protected boolean anchor;
 	protected double anchorX, anchorY;
 	
-	public CardObject(CardData data, SpriteObject sprite) {
+	public CardObject(int id, CardData data, SpriteObject sprite) {
+		cardID = id;
+		cardState = 0;
 		cardData = data;
 		cardField = null;
 		cardSprite = new Sprite(sprite);
@@ -34,6 +39,11 @@ public class CardObject {
 	public void destroy() {
 		cardSprite.destroy();
 	}
+	
+	public void setCardState(int state) {cardState = state;}
+	
+	public int getCardID() {return cardID;}
+	public int getCardState() {return cardState;}
 	
 	public void setField(CardField cardField) {
 		this.cardField = cardField;

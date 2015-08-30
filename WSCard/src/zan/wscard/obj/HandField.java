@@ -19,4 +19,10 @@ public class HandField extends CardField {
 	public void addCard(CardObject card) {handCards.add(card);}
 	public void removeCard(CardObject card) {handCards.remove(card);}
 	
+	public ArrayList<Integer> getHandCards() {
+		ArrayList<Integer> hand = new ArrayList<Integer>();
+		for (int i=0;i<handCards.size();i++) hand.add(handCards.get(i).getCardID());
+		return hand;
+	}
+	
 }
