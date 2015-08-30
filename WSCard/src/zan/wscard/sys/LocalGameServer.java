@@ -21,7 +21,7 @@ public class LocalGameServer extends GameServer {
 	
 	public void writeToServer(String msg) {
 		inbox.add(msg);
-		System.out.println("Inbox Server: " + msg);
+		//System.out.println("Inbox Server: " + msg);
 	}
 	
 	@Override

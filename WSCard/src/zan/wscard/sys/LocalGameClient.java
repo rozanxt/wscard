@@ -14,7 +14,7 @@ public class LocalGameClient extends GameClient {
 	
 	public void writeToClient(String msg) {
 		inbox.add(msg);
-		System.out.println("Inbox Client " + clientID + ": " + msg);
+		if (clientID == 0) System.out.println("Inbox Client " + clientID + ": " + msg);
 	}
 	
 	@Override

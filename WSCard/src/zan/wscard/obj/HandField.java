@@ -4,15 +4,19 @@ import java.util.ArrayList;
 
 public class HandField extends CardField {
 	
-	public ArrayList<CardObject> handCards;
+	protected ArrayList<CardObject> handCards;
+	
+	protected double posY;
 	
 	public HandField() {
 		handCards = new ArrayList<CardObject>();
 	}
 	
+	public void setPosY(double posY) {this.posY = posY;}
+	
 	public void anchorCards() {
 		for (int i=0;i<handCards.size();i++) {
-			handCards.get(i).setAnchor(-(30.0*(handCards.size()-1))+60.0*i, -240.0);
+			handCards.get(i).setAnchor(-(30.0*(handCards.size()-1))+60.0*i, posY);
 		}
 	}
 	

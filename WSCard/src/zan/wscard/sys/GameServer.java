@@ -26,6 +26,7 @@ public abstract class GameServer extends GameSystem {
 		String msg = "DRAW";
 		for (int i=0;i<drawn.size();i++) msg += " " + drawn.get(i);
 		writeToClient(cid, msg);
+		writeToClient((cid == PL_A)?PL_B:PL_A, "OPDRAW " + num);
 	}
 	
 	protected void doChangeTurn() {
@@ -87,11 +88,18 @@ public abstract class GameServer extends GameSystem {
 		else if (cid == PL_B) return playerB;
 		return null;
 	}
+	protected PlayerServer getPlayerInTurn() {return getPlayer(playerTurn);}
+	protected PlayerServer getPlayerInWait() {return getPlayer((playerTurn == PL_A)?PL_B:PL_A);}
 	
 	@Override
 	protected void setState(int state) {
 		super.setState(state);
 		writeToAllClients("STATE " + gameState);
+	}
+	@Override
+	protected void setPhase(int phase) {
+		super.setPhase(phase);
+		writeToAllClients("PHASE " + gamePhase);
 	}
 	
 	protected abstract void writeToClient(int cid, String msg);
