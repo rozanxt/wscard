@@ -27,6 +27,13 @@ public abstract class GameClient extends GameSystem {
 	}
 	
 	public void nextPhase() {setPhase(++gamePhase);}
+	public void submitMoves(ArrayList<PlayerMove> moves) {
+		for (int i=0;i<moves.size();i++) {
+			String msg = "MOVE " + moves.get(i).getType();
+			for (int j=0;j<moves.get(i).getNumArgs();j++) msg += " " + moves.get(i).getArg(j);
+			writeToServer(msg);
+		}
+	}
 	public void sendReady() {writeToServer("READY");}
 	public void endTurn() {writeToServer("ENDTURN");}
 	public void endPhase() {inPhase = false;}
@@ -74,6 +81,10 @@ public abstract class GameClient extends GameSystem {
 						else if (phase == GP_ATTACK+1) actionStack.add("OPATTACK");
 					} else if (tkns[0].contentEquals("OPDRAW")) {
 						for (int i=0;i<Integer.parseInt(tkns[1]);i++) actionStack.add("OPDRAW");
+					} else if (tkns[0].contentEquals("OPPLACE")) {
+						actionStack.add(msg);
+					} else if (tkns[0].contentEquals("OPMOVE")) {
+						actionStack.add(msg);
 					}
 				}
 				

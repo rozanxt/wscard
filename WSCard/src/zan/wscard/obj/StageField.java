@@ -6,6 +6,8 @@ import zan.lib.gfx.obj.VertexObject;
 
 public class StageField extends CardField {
 	
+	protected int stageID;
+	
 	protected CardObject cardObj;
 	
 	protected VertexObject vObj;
@@ -15,7 +17,9 @@ public class StageField extends CardField {
 	
 	protected boolean inBound; // TODO
 	
-	public StageField() {
+	public StageField(int sid) {
+		stageID = sid;
+		
 		cardObj = null;
 		
 		final int[] ind = {0, 1, 2, 3};
@@ -48,6 +52,8 @@ public class StageField extends CardField {
 		this.posY = posY;
 	}
 	public void setSize(double size) {this.size = size;}
+	
+	public int getStageID() {return stageID;}
 	
 	public double getPosX() {return posX;}
 	public double getPosY() {return posY;}

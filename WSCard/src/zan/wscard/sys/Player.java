@@ -8,34 +8,47 @@ public abstract class Player {
 	
 	public static final int NO_CARD = -1;
 	
-	public static final int SS_NONE = 0;
-	public static final int SS_STAND = 1;
-	public static final int SS_REST = 2;
-	public static final int SS_REVERSE = 3;
+	public static final int CS_NONE = 0;
+	public static final int CS_STAND = 1;
+	public static final int CS_REST = 2;
+	public static final int CS_REVERSE = 3;
 	
-	protected PlayerInfo info;
+	protected PlayerInfo playerInfo;
 	
-	protected ArrayList<Integer> deck;
-	protected ArrayList<Integer> hand;
-	protected int[] stage;
-	protected int[] stageState;
+	protected ArrayList<Integer> playerDeck;
+	protected ArrayList<Integer> playerHand;
+	protected int[] playerStage;
+	protected int[] playerStageState;
 	
 	public Player() {
-		info = null;
-		deck = new ArrayList<Integer>();
-		hand = new ArrayList<Integer>();
-		stage = new int[5];
-		for (int i=0;i<5;i++) stage[i] = NO_CARD;
-		stageState = new int[5];
-		for (int i=0;i<5;i++) stageState[i] = SS_NONE;
+		playerInfo = null;
+		playerDeck = new ArrayList<Integer>();
+		playerHand = new ArrayList<Integer>();
+		playerStage = new int[5];
+		for (int i=0;i<5;i++) playerStage[i] = NO_CARD;
+		playerStageState = new int[5];
+		for (int i=0;i<5;i++) playerStageState[i] = CS_NONE;
 	}
 	
 	public void setInfo(PlayerInfo info) {
-		this.info = info;
+		playerInfo = info;
+	}
+	
+	public void syncHand(ArrayList<Integer> hand) {
+		playerHand.clear();
+		playerHand.addAll(hand);
+	}
+	
+	public void syncStage(int[] stage) {
+		for (int i=0;i<5;i++) playerStage[i] = stage[i];
+	}
+	
+	public int getHandCard(int hand) {
+		return playerHand.get(hand);
 	}
 	
 	public CardData getCardData(int card) {
-		return info.getCardData(card);
+		return playerInfo.getCardData(card);
 	}
 	
 }

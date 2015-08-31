@@ -71,6 +71,13 @@ public abstract class GameServer extends GameSystem {
 						setPhase(Integer.parseInt(tkns[2]));
 					} else if (tkns[1].contentEquals("REQDRAW")) {
 						doDrawCard(cid, Integer.parseInt(tkns[2]));
+					} else if (tkns[1].contentEquals("MOVE")) {
+						int type = Integer.parseInt(tkns[2]);
+						if (type == PlayerMove.MT_PLACE) {
+							writeToClient((cid == PL_A)?PL_B:PL_A, "OPPLACE " + Integer.parseInt(tkns[4]));
+						} else if (type == PlayerMove.MT_MOVE) {
+							writeToClient((cid == PL_A)?PL_B:PL_A, "OPMOVE " + Integer.parseInt(tkns[3]) + " " + Integer.parseInt(tkns[4]));
+						}
 					} else if (tkns[1].contentEquals("ENDTURN")) {
 						doChangeTurn();
 					}

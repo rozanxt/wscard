@@ -1,10 +1,12 @@
 package zan.wscard.obj;
 
 import zan.lib.gfx.ShaderProgram;
-import zan.lib.gfx.obj.SpriteObject;
-import zan.lib.gfx.sprite.Sprite;
+import zan.lib.gfx.texture.TextureInfo;
+import zan.lib.gfx.texture.TextureManager;
 import zan.lib.util.Utility;
 import zan.wscard.card.CardData;
+import zan.wscard.gfx.CardSprite;
+import zan.wscard.sys.Player;
 
 public class CardObject {
 	
@@ -14,7 +16,7 @@ public class CardObject {
 	protected CardData cardData;
 	protected CardField cardField;
 	
-	protected Sprite cardSprite;
+	protected CardSprite cardSprite;
 	
 	protected double posX, posY;
 	protected double size;
@@ -22,18 +24,21 @@ public class CardObject {
 	protected boolean anchor;
 	protected double anchorX, anchorY;
 	
-	public CardObject(int id, CardData data, SpriteObject sprite) {
+	protected boolean hide;
+	
+	public CardObject(int id, CardData data, TextureInfo texture) {
 		cardID = id;
-		cardState = 0;
+		cardState = Player.CS_NONE;
 		cardData = data;
 		cardField = null;
-		cardSprite = new Sprite(sprite);
+		cardSprite = new CardSprite(texture, TextureManager.getTexture("CARDBACK"));
 		posX = 0.0;
 		posY = 0.0;
 		size = 1.0;
 		anchor = false;
 		anchorX = 0.0;
 		anchorY = 0.0;
+		hide = false;
 	}
 	
 	public void destroy() {
@@ -69,6 +74,14 @@ public class CardObject {
 	public double getAnchorX() {return anchorX;}
 	public double getAnchorY() {return anchorY;}
 	
+	public boolean isInAnchor() {
+		double dx = anchorX-posX;
+		double dy = anchorY-posY;
+		double dist2 = dx*dx+dy*dy;
+		if (dist2 < 10.0) return true;
+		return false;
+	}
+	
 	// TODO
 	public boolean isInBound(double sx, double sy) {
 		if (sx > posX-0.5*size*(500.0/730.0) && sx < posX+0.5*size*(500.0/730.0) && sy > posY-0.5*size && sy < posY+0.5*size) return true;
@@ -79,6 +92,7 @@ public class CardObject {
 		if (anchor) setPos(Utility.interpolateLinear(posX, anchorX, 0.2), Utility.interpolateLinear(posY, anchorY, 0.2));
 		cardSprite.setPos(posX, posY);
 		cardSprite.setScale(size);
+		cardSprite.hide((cardID == -1));
 		cardSprite.update();
 	}
 	
