@@ -1,21 +1,20 @@
 package zan.wscard.obj;
 
 import static org.lwjgl.opengl.GL11.GL_LINE_LOOP;
+
+import java.util.ArrayList;
+
 import zan.lib.gfx.ShaderProgram;
 import zan.lib.gfx.obj.VertexObject;
 
-public class StageField extends CardField {
+public class WaitingRoomField extends CardField {
 	
-	protected int stageID;
-	
-	protected CardObject cardObj;
+	protected ArrayList<CardObject> waitingRoomCards;
 	
 	protected VertexObject vObj;
 	
-	public StageField(int sid) {
-		stageID = sid;
-		
-		cardObj = null;
+	public WaitingRoomField() {
+		waitingRoomCards = new ArrayList<CardObject>();
 		
 		final int[] ind = {0, 1, 2, 3};
 		final float[] ver = {
@@ -33,15 +32,14 @@ public class StageField extends CardField {
 		vObj.destroy();
 	}
 	
-	public void setCard(CardObject cardObj) {this.cardObj = cardObj;}
-	public CardObject getCard() {return cardObj;}
+	public void addCard(CardObject card) {waitingRoomCards.add(card);}
+	public void removeCard(CardObject card) {waitingRoomCards.remove(card);}
 	
-	public int getStageID() {return stageID;}
-	public boolean hasCard() {return (cardObj != null);}
+	public CardObject getCard(int card) {return waitingRoomCards.get(card);}
 	
 	@Override
 	public void update() {
-		if (cardObj != null) cardObj.update();
+		for (int i=0;i<waitingRoomCards.size();i++) waitingRoomCards.get(i).update();
 	}
 	
 	@Override
@@ -54,7 +52,7 @@ public class StageField extends CardField {
 		sp.applyModelView();
 		sp.popMatrix();
 		
-		if (highlight) sp.setColor(1.0, 1.0, 0.0, 1.0);
+		if (highlight) sp.setColor(1.0, 0.0, 0.0, 1.0);
 		else sp.setColor(1.0, 1.0, 1.0, 1.0);
 		
 		vObj.render(sp);
@@ -64,7 +62,7 @@ public class StageField extends CardField {
 	
 	@Override
 	public void renderCards(ShaderProgram sp, double ip) {
-		if (cardObj != null) if (!cardObj.isHeld()) cardObj.render(sp, ip);
+		for (int i=0;i<waitingRoomCards.size();i++) if (!waitingRoomCards.get(i).isHeld()) waitingRoomCards.get(i).render(sp, ip);
 	}
 	
 }

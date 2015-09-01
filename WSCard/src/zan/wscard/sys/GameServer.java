@@ -2,6 +2,8 @@ package zan.wscard.sys;
 
 import java.util.ArrayList;
 
+import static zan.wscard.sys.PlayerMove.*;
+
 public abstract class GameServer extends GameSystem {
 	
 	protected PlayerServer playerA, playerB;
@@ -21,19 +23,22 @@ public abstract class GameServer extends GameSystem {
 		playerB.setInfo(infoB);
 	}
 	
-	protected void doDrawCard(int cid, int num) {
-		ArrayList<Integer> drawn = getPlayer(cid).drawCards(num);
-		String msg = "DRAW";
-		for (int i=0;i<drawn.size();i++) msg += " " + drawn.get(i);
-		writeToClient(cid, msg);
-		writeToClient((cid == PL_A)?PL_B:PL_A, "OPDRAW " + num);
-	}
-	
 	protected void doChangeTurn() {
 		if (playerTurn == PL_A) playerTurn = PL_B;
 		else if (playerTurn == PL_B) playerTurn = PL_A;
 		else playerTurn = PL_A;	// TODO
 		writeToAllClients("TURN " + playerTurn);
+	}
+	
+	protected void doDrawCards(int cid, int num) {
+		ArrayList<Integer> drawn = getPlayer(cid).drawCards(num);
+		String m = "DRAW";
+		for (int i=0;i<drawn.size();i++) m += " " + drawn.get(i);
+		writeToClient(cid, m);
+	}
+	
+	protected void doDiscardCards(int cid, ArrayList<Integer> cards) {
+		// TODO
 	}
 	
 	public void update() {
@@ -44,42 +49,58 @@ public abstract class GameServer extends GameSystem {
 			
 			if (isState(GS_INIT)) {
 				if (tkns[1].contentEquals("READY")) {
-					if (cid == 0) readyA = true;
-					else if (cid == 1) readyB = true;
+					if (cid == PL_A) readyA = true;
+					else if (cid == PL_B) readyB = true;
 					if (readyA && readyB) {
 						readyA = false;
 						readyB = false;
 						setState(GS_FIRSTDRAW);
-						doDrawCard(0, 5);
-						doDrawCard(1, 5);
+						doDrawCards(PL_A, 5);
+						doDrawCards(PL_B, 5);
+						// TODO
+						writeToAllClients("MOVE 0 2 5");
+						writeToAllClients("MOVE 1 2 5");
 					}
 				}
 			} else if (isState(GS_FIRSTDRAW)) {
-				if (tkns[1].contentEquals("READY")) {
-					if (cid == 0) readyA = true;
-					else if (cid == 1) readyB = true;
-					if (readyA && readyB) {
-						readyA = false;
-						readyB = false;
-						setState(GS_GAME);
-						doChangeTurn();
+				if (tkns[1].contentEquals("DO")) {
+					int type = Integer.parseInt(tkns[2]);
+					
+					// TODO
+					String m = "MOVE " + cid + " " + type;
+					for (int i=3;i<tkns.length;i++) m += " " + Integer.parseInt(tkns[i]);
+					writeToAllClients(m);
+					
+					if (type == MT_ENDTURN) {
+						if (cid == PL_A) readyA = true;
+						else if (cid == PL_B) readyB = true;
+						if (readyA && readyB) {
+							readyA = false;
+							readyB = false;
+							setState(GS_GAME);
+							doChangeTurn();
+						}
+					} else if (type == MT_DRAW) {
+						doDrawCards(cid, Integer.parseInt(tkns[3]));
 					}
 				}
 			} else if (isState(GS_GAME)) {
-				if (cid == playerTurn) {
-					if (tkns[1].contentEquals("PHASE")) {
-						setPhase(Integer.parseInt(tkns[2]));
-					} else if (tkns[1].contentEquals("REQDRAW")) {
-						doDrawCard(cid, Integer.parseInt(tkns[2]));
-					} else if (tkns[1].contentEquals("MOVE")) {
-						int type = Integer.parseInt(tkns[2]);
-						if (type == PlayerMove.MT_PLACE) {
-							writeToClient((cid == PL_A)?PL_B:PL_A, "OPPLACE " + Integer.parseInt(tkns[4]));
-						} else if (type == PlayerMove.MT_MOVE) {
-							writeToClient((cid == PL_A)?PL_B:PL_A, "OPMOVE " + Integer.parseInt(tkns[3]) + " " + Integer.parseInt(tkns[4]));
+				if (tkns[1].contentEquals("PHASE")) {
+					if (cid == playerTurn) setPhase(Integer.parseInt(tkns[2]));
+				} else if (tkns[1].contentEquals("DO")) {
+					int type = Integer.parseInt(tkns[2]);
+					
+					// TODO
+					String m = "MOVE " + cid + " " + type;
+					for (int i=3;i<tkns.length;i++) m += " " + Integer.parseInt(tkns[i]);
+					writeToAllClients(m);
+					
+					if (cid == playerTurn) {
+						if (type == MT_ENDTURN) {
+							doChangeTurn();
+						} else if (type == MT_DRAW) {
+							doDrawCards(cid, Integer.parseInt(tkns[3]));
 						}
-					} else if (tkns[1].contentEquals("ENDTURN")) {
-						doChangeTurn();
 					}
 				}
 			} else if (isState(GS_END)) {

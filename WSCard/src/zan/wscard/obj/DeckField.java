@@ -3,19 +3,17 @@ package zan.wscard.obj;
 import static org.lwjgl.opengl.GL11.GL_LINE_LOOP;
 import zan.lib.gfx.ShaderProgram;
 import zan.lib.gfx.obj.VertexObject;
+import zan.lib.gfx.texture.TextureManager;
+import zan.wscard.gfx.CardSprite;
 
-public class StageField extends CardField {
+public class DeckField extends CardField {
 	
-	protected int stageID;
-	
-	protected CardObject cardObj;
+	protected CardSprite deckSprite;
 	
 	protected VertexObject vObj;
 	
-	public StageField(int sid) {
-		stageID = sid;
-		
-		cardObj = null;
+	public DeckField() {
+		deckSprite = new CardSprite(TextureManager.getTexture("CARDBACK"), TextureManager.getTexture("CARDBACK"));
 		
 		final int[] ind = {0, 1, 2, 3};
 		final float[] ver = {
@@ -33,15 +31,11 @@ public class StageField extends CardField {
 		vObj.destroy();
 	}
 	
-	public void setCard(CardObject cardObj) {this.cardObj = cardObj;}
-	public CardObject getCard() {return cardObj;}
-	
-	public int getStageID() {return stageID;}
-	public boolean hasCard() {return (cardObj != null);}
-	
 	@Override
 	public void update() {
-		if (cardObj != null) cardObj.update();
+		deckSprite.setPos(posX, posY);
+		deckSprite.setScale(size);
+		deckSprite.update();
 	}
 	
 	@Override
@@ -54,17 +48,17 @@ public class StageField extends CardField {
 		sp.applyModelView();
 		sp.popMatrix();
 		
-		if (highlight) sp.setColor(1.0, 1.0, 0.0, 1.0);
+		if (highlight) sp.setColor(0.0, 1.0, 0.0, 1.0);
 		else sp.setColor(1.0, 1.0, 1.0, 1.0);
 		
 		vObj.render(sp);
 		
 		sp.enableTexture(true);
+		
+		deckSprite.render(sp, ip);
 	}
 	
 	@Override
-	public void renderCards(ShaderProgram sp, double ip) {
-		if (cardObj != null) if (!cardObj.isHeld()) cardObj.render(sp, ip);
-	}
+	public void renderCards(ShaderProgram sp, double ip) {}
 	
 }

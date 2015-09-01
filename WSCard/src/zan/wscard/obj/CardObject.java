@@ -1,14 +1,15 @@
 package zan.wscard.obj;
 
 import zan.lib.gfx.ShaderProgram;
-import zan.lib.gfx.texture.TextureInfo;
 import zan.lib.gfx.texture.TextureManager;
 import zan.lib.util.Utility;
 import zan.wscard.card.CardData;
 import zan.wscard.gfx.CardSprite;
-import zan.wscard.sys.Player;
 
 public class CardObject {
+	
+	public static final double cardSize = 80.0;
+	public static final double cardRatio = (500.0/730.0);
 	
 	protected int cardID;
 	protected int cardState;
@@ -17,28 +18,32 @@ public class CardObject {
 	protected CardField cardField;
 	
 	protected CardSprite cardSprite;
-	
 	protected double posX, posY;
 	protected double size;
-	
-	protected boolean anchor;
 	protected double anchorX, anchorY;
-	
+	protected boolean anchor;
+	protected boolean held;
 	protected boolean hide;
 	
-	public CardObject(int id, CardData data, TextureInfo texture) {
+	public CardObject(int id, CardData data) {
 		cardID = id;
-		cardState = Player.CS_NONE;
+		cardState = 0;	// TODO
 		cardData = data;
 		cardField = null;
-		cardSprite = new CardSprite(texture, TextureManager.getTexture("CARDBACK"));
+		if (cardData == null) cardSprite = new CardSprite(TextureManager.getTexture("CARDBACK"), TextureManager.getTexture("CARDBACK"));
+		else cardSprite = new CardSprite(TextureManager.getTexture(cardData.id), TextureManager.getTexture("CARDBACK"));
 		posX = 0.0;
 		posY = 0.0;
-		size = 1.0;
-		anchor = false;
+		size = cardSize;
 		anchorX = 0.0;
 		anchorY = 0.0;
+		anchor = true;
+		held = false;
 		hide = false;
+	}
+	public CardObject() {
+		this(-1, null);
+		hide = true;
 	}
 	
 	public void destroy() {
@@ -46,34 +51,25 @@ public class CardObject {
 	}
 	
 	public void setCardState(int state) {cardState = state;}
+	public void setCardField(CardField field) {
+		cardField = field;
+		if (cardField != null) setAnchor(cardField.getAnchorX(), cardField.getAnchorY());
+	}
 	
 	public int getCardID() {return cardID;}
 	public int getCardState() {return cardState;}
-	
-	public void setField(CardField cardField) {
-		this.cardField = cardField;
-		if (cardField != null && cardField instanceof StageField) {
-			StageField sf = (StageField)cardField;
-			setAnchor(sf.getPosX(), sf.getPosY());
-		}
-	}
-	public CardField getField() {return cardField;}
 	public CardData getCardData() {return cardData;}
+	public CardField getCardField() {return cardField;}
 	
-	public void setPos(double posX, double posY) {
-		this.posX = posX;
-		this.posY = posY;
-	}
+	public void setPos(double sx, double sy) {posX = sx; posY = sy;}
 	public void setSize(double size) {this.size = size;}
+	public void setAnchor(double sx, double sy) {anchorX = sx; anchorY = sy;}
 	public void toggleAnchor(boolean anchor) {this.anchor = anchor;}
-	public void setAnchor(double anchorX, double anchorY) {
-		this.anchorX = anchorX;
-		this.anchorY = anchorY;
-	}
+	public void toggleHeld(boolean held) {this.held = held;}
+	public void toggleHide(boolean hide) {this.hide = hide;}
 	
 	public double getAnchorX() {return anchorX;}
 	public double getAnchorY() {return anchorY;}
-	
 	public boolean isInAnchor() {
 		double dx = anchorX-posX;
 		double dy = anchorY-posY;
@@ -81,18 +77,20 @@ public class CardObject {
 		if (dist2 < 10.0) return true;
 		return false;
 	}
-	
-	// TODO
 	public boolean isInBound(double sx, double sy) {
-		if (sx > posX-0.5*size*(500.0/730.0) && sx < posX+0.5*size*(500.0/730.0) && sy > posY-0.5*size && sy < posY+0.5*size) return true;
+		double sh = 0.5*size;
+		double sw = sh*cardRatio;
+		if (sx > posX-sw && sx < posX+sw && sy > posY-sh && sy < posY+sh) return true;
 		return false;
 	}
+	public boolean isHeld() {return held;}
+	public boolean isHidden() {return hide;}
 	
 	public void update() {
 		if (anchor) setPos(Utility.interpolateLinear(posX, anchorX, 0.2), Utility.interpolateLinear(posY, anchorY, 0.2));
 		cardSprite.setPos(posX, posY);
 		cardSprite.setScale(size);
-		cardSprite.hide((cardID == -1));
+		cardSprite.hide(hide);
 		cardSprite.update();
 	}
 	

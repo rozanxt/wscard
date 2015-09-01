@@ -16,6 +16,7 @@ public abstract class Player {
 	protected PlayerInfo playerInfo;
 	
 	protected ArrayList<Integer> playerDeck;
+	protected ArrayList<Integer> playerWaitingRoom;
 	protected ArrayList<Integer> playerHand;
 	protected int[] playerStage;
 	protected int[] playerStageState;
@@ -23,6 +24,7 @@ public abstract class Player {
 	public Player() {
 		playerInfo = null;
 		playerDeck = new ArrayList<Integer>();
+		playerWaitingRoom = new ArrayList<Integer>();
 		playerHand = new ArrayList<Integer>();
 		playerStage = new int[5];
 		for (int i=0;i<5;i++) playerStage[i] = NO_CARD;
@@ -34,17 +36,12 @@ public abstract class Player {
 		playerInfo = info;
 	}
 	
-	public void syncHand(ArrayList<Integer> hand) {
-		playerHand.clear();
-		playerHand.addAll(hand);
-	}
-	
-	public void syncStage(int[] stage) {
-		for (int i=0;i<5;i++) playerStage[i] = stage[i];
-	}
-	
 	public int getHandCard(int hand) {
 		return playerHand.get(hand);
+	}
+	
+	public void addToWaitingRoom(int card) {
+		playerWaitingRoom.add(card);
 	}
 	
 	public CardData getCardData(int card) {

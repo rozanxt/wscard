@@ -4,7 +4,7 @@ import static zan.lib.input.InputManager.IM_KEY_ESCAPE;
 import static zan.lib.input.InputManager.IM_KEY_F11;
 import static zan.lib.input.InputManager.IM_RELEASE;
 import zan.lib.core.CoreEngine;
-import zan.wscard.panel.GamePanel;
+import zan.wscard.panel.TestPanel;
 
 public class GameCore extends CoreEngine {
 	
@@ -19,7 +19,7 @@ public class GameCore extends CoreEngine {
 		GameCore core = new GameCore();
 		core.setTitle("Weiss-Schwarz Simulator");
 		core.setScreenSize(800, 600);
-		core.setPanel(new GamePanel(core));
+		core.setPanel(new TestPanel(core));
 		core.run();
 	}
 	

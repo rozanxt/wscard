@@ -2,23 +2,25 @@ package zan.wscard.sys;
 
 import java.util.ArrayList;
 
+import static zan.wscard.sys.PlayerMove.*;
+
 public abstract class GameClient extends GameSystem {
 	
 	protected int clientID;
 	
 	protected PlayerClient player, opponent;
 	
-	protected boolean inPhase;
-	
 	protected ArrayList<String> actionStack;
+	
+	protected boolean inPhase;
 	
 	public GameClient() {
 		super();
 		clientID = PL_NONE;
 		player = new PlayerClient();
 		opponent = new PlayerClient();
-		inPhase = false;
 		actionStack = new ArrayList<String>();
+		inPhase = false;
 	}
 	
 	public void initClient(PlayerInfo infoPlayer, PlayerInfo infoOpponent) {
@@ -27,15 +29,22 @@ public abstract class GameClient extends GameSystem {
 	}
 	
 	public void nextPhase() {setPhase(++gamePhase);}
+	public void submitRedraw(ArrayList<Integer> redraw) {
+		String m = "DO " + MT_DISCARD;
+		for (int i=0;i<redraw.size();i++) m += " " + redraw.get(i);
+		writeToServer(m);
+		writeToServer("DO " + MT_DRAW + " " + redraw.size());
+		writeToServer("DO " + MT_ENDTURN);
+	}
 	public void submitMoves(ArrayList<PlayerMove> moves) {
 		for (int i=0;i<moves.size();i++) {
-			String msg = "MOVE " + moves.get(i).getType();
-			for (int j=0;j<moves.get(i).getNumArgs();j++) msg += " " + moves.get(i).getArg(j);
-			writeToServer(msg);
+			String m = "DO " + moves.get(i).getType();
+			for (int j=0;j<moves.get(i).getNumArgs();j++) m += " " + moves.get(i).getArg(j);
+			writeToServer(m);
 		}
 	}
 	public void sendReady() {writeToServer("READY");}
-	public void endTurn() {writeToServer("ENDTURN");}
+	public void endTurn() {writeToServer("DO " + MT_ENDTURN);}
 	public void endPhase() {inPhase = false;}
 	
 	public void update() {
@@ -43,51 +52,58 @@ public abstract class GameClient extends GameSystem {
 		while (msg != null && !msg.isEmpty()) {
 			String[] tkns = msg.split(" ");
 			
-			if (tkns[0].contentEquals("STATE")) {
-				setState(Integer.parseInt(tkns[1]));
-			} else if (tkns[0].contentEquals("CID")) {
+			if (tkns[0].contentEquals("CID")) {
 				clientID = Integer.parseInt(tkns[1]);
+			} else if (tkns[0].contentEquals("STATE")) {
+				setState(Integer.parseInt(tkns[1]));
+				inPhase = true;
 			}
 			
 			if (isState(GS_INIT)) {
 				
 			} else if (isState(GS_FIRSTDRAW)) {
-				if (tkns[0].contentEquals("DRAW")) {
+				if (tkns[0].contentEquals("MOVE")) {
+					int mid = Integer.parseInt(tkns[1]);
+					int type = Integer.parseInt(tkns[2]);
+					if (mid == clientID) {	// TODO playerID
+						// TODO sync player data
+					} else {
+						if (type == MT_DRAW) {
+							for (int i=0;i<Integer.parseInt(tkns[3]);i++) actionStack.add("OPDRAW");
+						} else if (type == MT_DISCARD) {
+							for (int i=3;i<tkns.length;i++) actionStack.add("OPDISCARD " + Integer.parseInt(tkns[i]));
+						}
+					}
+				} else if (tkns[0].contentEquals("DRAW")) {
 					for (int i=1;i<tkns.length;i++) actionStack.add("DRAW " + Integer.parseInt(tkns[i]));
-				} else if (tkns[0].contentEquals("OPDRAW")) {
-					for (int i=0;i<Integer.parseInt(tkns[1]);i++) actionStack.add("OPDRAW");
 				}
 			} else if (isState(GS_GAME)) {
-				
 				if (tkns[0].contentEquals("TURN")) {
 					int turn = Integer.parseInt(tkns[1]);
-					if (turn == clientID) {
+					if (turn == clientID) {	// TODO playerID
 						if (!isInTurn()) setPhase(GP_STANDUP);
 					}
 					playerTurn = turn;
-				}
-				
-				if (isInTurn()) {
-					if (tkns[0].contentEquals("DRAW")) {
-						for (int i=1;i<tkns.length;i++) actionStack.add("DRAW " + Integer.parseInt(tkns[i]));
-						actionStack.add("NEXTPHASE");
+				} else if (tkns[0].contentEquals("MOVE")) {
+					int mid = Integer.parseInt(tkns[1]);
+					int type = Integer.parseInt(tkns[2]);
+					if (mid == clientID) {	// TODO playerID
+						// TODO sync player data
+					} else {
+						if (type == MT_DRAW) {
+							for (int i=0;i<Integer.parseInt(tkns[3]);i++) actionStack.add("OPDRAW");
+						} else if (type == MT_DISCARD) {
+							for (int i=3;i<tkns.length;i++) actionStack.add("OPDISCARD " + Integer.parseInt(tkns[i]));
+						} else if (type == MT_PLACE) {
+							actionStack.add("OPPLACE " + Integer.parseInt(tkns[3]) + " " + Integer.parseInt(tkns[4]));
+						} else if (type == MT_MOVE) {
+							actionStack.add("OPMOVE " + Integer.parseInt(tkns[3]) + " " + Integer.parseInt(tkns[4]));
+						}
 					}
-				} else {
-					if (tkns[0].contentEquals("PHASE")) {
-						int phase = Integer.parseInt(tkns[1]);
-						if (phase == GP_STANDUP+1) actionStack.add("OPSTANDUP");
-						else if (phase == GP_CLOCK+1) actionStack.add("OPCLOCK");
-						else if (phase == GP_MAIN+1) actionStack.add("OPMAIN");
-						else if (phase == GP_ATTACK+1) actionStack.add("OPATTACK");
-					} else if (tkns[0].contentEquals("OPDRAW")) {
-						for (int i=0;i<Integer.parseInt(tkns[1]);i++) actionStack.add("OPDRAW");
-					} else if (tkns[0].contentEquals("OPPLACE")) {
-						actionStack.add(msg);
-					} else if (tkns[0].contentEquals("OPMOVE")) {
-						actionStack.add(msg);
-					}
+				} else if (tkns[0].contentEquals("DRAW")) {
+					for (int i=1;i<tkns.length;i++) actionStack.add("DRAW " + Integer.parseInt(tkns[i]));
+					if (isPhase(GP_DRAW)) actionStack.add("NEXTPHASE");
 				}
-				
 			} else if (isState(GS_END)) {
 				
 			}
@@ -101,7 +117,7 @@ public abstract class GameClient extends GameSystem {
 				actionStack.add("NEXTPHASE");
 				endPhase();
 			} else if (isPhase(GP_DRAW)) {
-				writeToServer("REQDRAW 1");
+				writeToServer("DO " + MT_DRAW + " 1");
 				endPhase();
 			} else if (isPhase(GP_CLOCK)) {
 				actionStack.add("NEXTPHASE");
@@ -113,7 +129,7 @@ public abstract class GameClient extends GameSystem {
 				endPhase();
 			} else if (isPhase(GP_END)) {
 				setPhase(GP_WAIT);
-				writeToServer("ENDTURN");
+				endTurn();
 			}
 		}
 	}

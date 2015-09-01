@@ -6,16 +6,16 @@ import zan.wscard.card.CardData;
 
 public class PlayerInfo {
 	
-	protected String name;
-	protected CardData[] cards;
+	protected String playerName;
+	protected CardData[] playerCards;
 	
 	public PlayerInfo(String name, ArrayList<CardData> cards) {
-		this.name = name;
-		this.cards = new CardData[50];
-		for (int i=0;i<50;i++) this.cards[i] = cards.get(i);
+		playerName = name;
+		playerCards = new CardData[50];
+		for (int i=0;i<50;i++) playerCards[i] = cards.get(i);
 	}
 	
-	public String getName() {return name;}
-	public CardData getCardData(int card) {return cards[card];}
+	public String getPlayerName() {return playerName;}
+	public CardData getCardData(int card) {return playerCards[card];}
 	
 }
