@@ -7,14 +7,14 @@ import zan.lib.core.CoreEngine;
 import zan.wscard.panel.TestPanel;
 
 public class GameCore extends CoreEngine {
-	
+
 	@Override
 	protected void onKey(int key, int state, int mods, int scancode) {
 		if (key == IM_KEY_ESCAPE && state == IM_RELEASE) close();
 		else if (key == IM_KEY_F11 && state == IM_RELEASE) toggleFullScreen();
 		super.onKey(key, state, mods, scancode);
 	}
-	
+
 	public static void main(String[] args) {
 		GameCore core = new GameCore();
 		core.setTitle("Weiss-Schwarz Simulator");
@@ -22,5 +22,5 @@ public class GameCore extends CoreEngine {
 		core.setPanel(new TestPanel(core));
 		core.run();
 	}
-	
+
 }

@@ -6,6 +6,7 @@ import zan.lib.gfx.shader.DefaultShader;
 import zan.lib.gfx.texture.TextureManager;
 import zan.lib.gfx.text.TextManager;
 import zan.lib.gfx.view.ViewPort2D;
+import zan.lib.net.NetworkManager;
 import zan.lib.util.math.Vec2D;
 import zan.lib.core.BasePanel;
 import static zan.lib.input.InputManager.*;
@@ -17,7 +18,6 @@ import zan.wscard.sys.NetworkGameClient;
 import zan.wscard.sys.NetworkGameServer;
 import zan.wscard.sys.PlayerInfo;
 import zan.wscard.sys.PlayerMove;
-import zan.wscard.net.NetworkManager;
 import zan.wscard.obj.CardField;
 import zan.wscard.obj.CardObject;
 import zan.wscard.obj.DeckField;
@@ -72,7 +72,9 @@ public class GamePanel extends BasePanel {
 		viewPort.showView();
 		viewPort.projectView(shaderProgram);
 
-		// TODO TextManager.loadFontFile(new ResourceReader("res/font/fonts.res").getData().getNode("defont"));
+		TextureManager.init();
+		TextManager.init();
+		TextManager.loadFontFile("res/font/fonts.res");
 
 		CardReader cr = new CardReader();
 		ArrayList<CardData> LHCards = cr.loadCardData("res/card/LH.wsci");
@@ -108,7 +110,6 @@ public class GamePanel extends BasePanel {
 
 		int port = 3276;
 		if (mode == 1) {
-			NetworkManager.init();
 			if (NetworkManager.openServer(port, 2)) {
 				if (NetworkManager.openClient(address, port)) {
 					gameServer = new NetworkGameServer();

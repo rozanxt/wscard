@@ -8,12 +8,12 @@ import java.util.ArrayList;
 import zan.lib.util.Utility;
 
 public class CardReader {
-	
+
 	public CardReader() {}
-	
+
 	public ArrayList<CardData> loadCardData(String fnm) {
 		ArrayList<CardData> cardData = new ArrayList<CardData>();
-		
+
 		try {
 			String id = "NONE";
 			String name = "NONE";
@@ -30,14 +30,14 @@ public class CardReader {
 			String cardtext = "NONE";
 			String flavortext = "NONE";
 			String image = "NONE";
-			
+
 			BufferedReader br = new BufferedReader(new FileReader(fnm));
 			String line;
 			while((line = br.readLine()) != null) {
 				if (line.length() == 0)	continue;
-				String[] tkns = Utility.split(line);
+				String[] tkns = line.split(" ");
 				if (tkns[0].isEmpty() || tkns[0].startsWith("//")) continue;
-				
+
 				if (tkns[0].startsWith("ID")) {
 					if (!id.contentEquals("NONE")) {
 						cardData.add(new CardData(id, name, type, color, level, cost, power, soul, trigger, trait, rarity, side, cardtext, flavortext, image));
@@ -61,17 +61,13 @@ public class CardReader {
 					else if (tkns[1].contentEquals("YELLOW")) color = 3;
 					else color = -1;
 				} else if (tkns[0].startsWith("LEVEL")) {
-					if (!Utility.isIntegerString(tkns[1])) level = -1;
-					else level = Integer.parseInt(tkns[1]);
+					level = Utility.parseInt(tkns[1]);
 				} else if (tkns[0].startsWith("COST")) {
-					if (!Utility.isIntegerString(tkns[1])) cost = -1;
-					else cost = Integer.parseInt(tkns[1]);
+					cost = Utility.parseInt(tkns[1]);
 				} else if (tkns[0].startsWith("POWER")) {
-					if (!Utility.isIntegerString(tkns[1])) power = -1;
-					else power = Integer.parseInt(tkns[1]);
+					power = Utility.parseInt(tkns[1]);
 				} else if (tkns[0].startsWith("SOUL")) {
-					if (!Utility.isIntegerString(tkns[1])) soul = -1;
-					else soul = Integer.parseInt(tkns[1]);
+					soul = Utility.parseInt(tkns[1]);
 				} else if (tkns[0].startsWith("TRIGGER")) {
 					trigger = tkns[1];
 				} else if (tkns[0].startsWith("TRAIT")) {
@@ -105,13 +101,13 @@ public class CardReader {
 			if (!id.contentEquals("NONE")) {
 				cardData.add(new CardData(id, name, type, color, level, cost, power, soul, trigger, trait, rarity, side, cardtext, flavortext, image));
 			}
-			
+
 			br.close();
 		} catch (IOException e) {
 			System.err.println("Error reading file " + fnm + ":\n " + e);
 		}
-		
+
 		return cardData;
 	}
-	
+
 }
