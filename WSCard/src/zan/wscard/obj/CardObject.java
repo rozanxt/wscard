@@ -1,22 +1,22 @@
 package zan.wscard.obj;
 
-import zan.lib.gfx.ShaderProgram;
+import zan.lib.gfx.shader.DefaultShader;
 import zan.lib.gfx.texture.TextureManager;
 import zan.lib.util.Utility;
 import zan.wscard.card.CardData;
 import zan.wscard.gfx.CardSprite;
 
 public class CardObject {
-	
+
 	public static final double cardSize = 80.0;
 	public static final double cardRatio = (500.0/730.0);
-	
+
 	protected int cardID;
 	protected int cardState;
-	
+
 	protected CardData cardData;
 	protected CardField cardField;
-	
+
 	protected CardSprite cardSprite;
 	protected double posX, posY;
 	protected double size;
@@ -24,7 +24,7 @@ public class CardObject {
 	protected boolean anchor;
 	protected boolean held;
 	protected boolean hide;
-	
+
 	public CardObject(int id, CardData data) {
 		cardID = id;
 		cardState = 0;	// TODO
@@ -45,29 +45,29 @@ public class CardObject {
 		this(-1, null);
 		hide = true;
 	}
-	
+
 	public void destroy() {
 		cardSprite.destroy();
 	}
-	
+
 	public void setCardState(int state) {cardState = state;}
 	public void setCardField(CardField field) {
 		cardField = field;
 		if (cardField != null) setAnchor(cardField.getAnchorX(), cardField.getAnchorY());
 	}
-	
+
 	public int getCardID() {return cardID;}
 	public int getCardState() {return cardState;}
 	public CardData getCardData() {return cardData;}
 	public CardField getCardField() {return cardField;}
-	
+
 	public void setPos(double sx, double sy) {posX = sx; posY = sy;}
 	public void setSize(double size) {this.size = size;}
 	public void setAnchor(double sx, double sy) {anchorX = sx; anchorY = sy;}
 	public void toggleAnchor(boolean anchor) {this.anchor = anchor;}
 	public void toggleHeld(boolean held) {this.held = held;}
 	public void toggleHide(boolean hide) {this.hide = hide;}
-	
+
 	public double getAnchorX() {return anchorX;}
 	public double getAnchorY() {return anchorY;}
 	public boolean isInAnchor() {
@@ -85,7 +85,7 @@ public class CardObject {
 	}
 	public boolean isHeld() {return held;}
 	public boolean isHidden() {return hide;}
-	
+
 	public void update() {
 		if (anchor) setPos(Utility.interpolateLinear(posX, anchorX, 0.2), Utility.interpolateLinear(posY, anchorY, 0.2));
 		cardSprite.setPos(posX, posY);
@@ -93,9 +93,9 @@ public class CardObject {
 		cardSprite.hide(hide);
 		cardSprite.update();
 	}
-	
-	public void render(ShaderProgram sp, double ip) {
+
+	public void render(DefaultShader sp, double ip) {
 		cardSprite.render(sp, ip);
 	}
-	
+
 }

@@ -7,17 +7,17 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 public class ClientThread extends Thread {
-	
+
 	private ServerThread server;
 	private Socket client;
-	
+
 	private BufferedReader socketIn;
 	private PrintWriter socketOut;
-	
+
 	private int clientID;
-	
+
 	private boolean running;
-	
+
 	public ClientThread(ServerThread ss, Socket sc, int id) throws IOException {
 		server = ss;
 		client = sc;
@@ -27,11 +27,12 @@ public class ClientThread extends Thread {
 		running = true;
 		start();
 	}
-	
+
 	public void writeToClient(String msg) {
 		socketOut.println(msg);
+		socketOut.flush();
 	}
-	
+
 	public boolean closeClient() {
 		try {
 			writeToClient("DISCONNECT");
@@ -42,7 +43,7 @@ public class ClientThread extends Thread {
 		}
 		return !running;
 	}
-	
+
 	@Override
 	public void run() {
 		while (running) {
@@ -58,9 +59,9 @@ public class ClientThread extends Thread {
 		}
 		server.removeClient(clientID);
 	}
-	
+
 	public boolean isRunning() {
 		return running;
 	}
-	
+
 }

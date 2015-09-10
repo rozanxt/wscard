@@ -2,13 +2,12 @@ package zan.wscard.panel;
 
 import java.util.ArrayList;
 
-import zan.lib.gfx.ShaderProgram;
+import zan.lib.gfx.shader.DefaultShader;
 import zan.lib.gfx.texture.TextureManager;
 import zan.lib.gfx.text.TextManager;
 import zan.lib.gfx.view.ViewPort2D;
 import zan.lib.util.math.Vec2D;
-import zan.lib.panel.BasePanel;
-import zan.lib.res.ResourceReader;
+import zan.lib.core.BasePanel;
 import static zan.lib.input.InputManager.*;
 import zan.wscard.card.CardData;
 import zan.wscard.card.CardReader;
@@ -28,13 +27,13 @@ import zan.wscard.obj.WaitingRoomField;
 import static zan.wscard.sys.GameSystem.*;
 
 public class GamePanel extends BasePanel {
-	
-	private ShaderProgram shaderProgram;
+
+	private DefaultShader shaderProgram;
 	private ViewPort2D viewPort;
-	
+
 	private NetworkGameServer gameServer;
 	private NetworkGameClient gameClient;
-	
+
 	private HandField playerHand;
 	private HandField opponentHand;
 	private StageField[] playerStages;
@@ -43,34 +42,38 @@ public class GamePanel extends BasePanel {
 	private DeckField opponentDeck;
 	private WaitingRoomField playerWaitingRoom;
 	private WaitingRoomField opponentWaitingRoom;
-	
+
 	private ArrayList<PlayerMove> playerMoves;
-	
+
 	private CardObject focusedCard;
 	private CardObject heldCard;
 	private Vec2D heldOffset;
-	
+
 	// TODO
 	private int mode;
+	private String address;
 	private int actionDelay;
 	private String actionMessage;
 	private int redraw;
-	
-	public GamePanel(GameCore core, int mode) {
+
+	public GamePanel(GameCore core, int mode, String address) {
+		shaderProgram = new DefaultShader();
 		viewPort = new ViewPort2D(0, 0, core.getScreenWidth(), core.getScreenHeight());
 		this.mode = mode;
+		this.address = address;
 	}
-	
+
 	@Override
 	public void init() {
-		shaderProgram = new ShaderProgram();
-		
+		shaderProgram.loadProgram();
+		shaderProgram.enableBlend(true);
+
 		viewPort.setHeightInterval(600.0);
 		viewPort.showView();
 		viewPort.projectView(shaderProgram);
-		
-		TextManager.loadFontFile(new ResourceReader("res/font/fonts.res").getData().getNode("defont"));
-		
+
+		// TODO TextManager.loadFontFile(new ResourceReader("res/font/fonts.res").getData().getNode("defont"));
+
 		CardReader cr = new CardReader();
 		ArrayList<CardData> LHCards = cr.loadCardData("res/card/LH.wsci");
 		ArrayList<CardData> LHDeck = new ArrayList<CardData>();
@@ -88,7 +91,7 @@ public class GamePanel extends BasePanel {
 				PDDeck.add(PDCards.get(i));
 			}
 		}
-		
+
 		TextureManager.loadTexture("CARDBACK", "res/img/card/cardback.jpg");
 		for (int i=0;i<LHCards.size();i++) {
 			CardData c = LHCards.get(i);
@@ -98,16 +101,16 @@ public class GamePanel extends BasePanel {
 			CardData c = PDCards.get(i);
 			TextureManager.loadTexture(c.id, c.image);
 		}
-		
-		
+
+
 		PlayerInfo infoA = new PlayerInfo("Player A", LHDeck);
 		PlayerInfo infoB = new PlayerInfo("Player B", PDDeck);
-		
+
 		int port = 3276;
 		if (mode == 1) {
 			NetworkManager.init();
 			if (NetworkManager.openServer(port, 2)) {
-				if (NetworkManager.openClient("localhost", port)) {
+				if (NetworkManager.openClient(address, port)) {
 					gameServer = new NetworkGameServer();
 					gameServer.initServer(infoA, infoB);
 					gameClient = new NetworkGameClient();
@@ -117,13 +120,13 @@ public class GamePanel extends BasePanel {
 				}
 			}
 		} else if (mode == 2) {
-			if (NetworkManager.openClient("localhost", port)) {
+			if (NetworkManager.openClient(address, port)) {
 				gameServer = null;
 				gameClient = new NetworkGameClient();
 				gameClient.initClient(infoB, infoA);
 			}
 		}
-		
+
 		playerHand = new HandField();
 		playerHand.setPos(0.0, -240.0);
 		opponentHand = new HandField();
@@ -148,25 +151,25 @@ public class GamePanel extends BasePanel {
 		playerWaitingRoom.setPos(320.0, -100.0);
 		opponentWaitingRoom = new WaitingRoomField();
 		opponentWaitingRoom.setPos(-320.0, 100.0);
-		
+
 		playerMoves = new ArrayList<PlayerMove>();
-		
+
 		focusedCard = null;
 		heldCard = null;
 		heldOffset = new Vec2D();
-		
+
 		actionDelay = 0;
 		actionMessage = "";
 		redraw = 0;
 	}
-	
+
 	@Override
 	public void destroy() {
 		// TODO
 		NetworkManager.closeClient();
 		if (mode == 1) NetworkManager.closeServer();
 	}
-	
+
 	@Override
 	public void update(double time) {
 		if (gameClient.isState(GameSystem.GS_INIT)) {
@@ -192,11 +195,11 @@ public class GamePanel extends BasePanel {
 				}
 			}
 		}
-		
+
 		if (mode == 1) gameServer.update();
 		gameClient.update();
-		
-		
+
+
 		if (actionDelay == 0) {
 			actionMessage = "";
 			String action = gameClient.getAction();
@@ -256,20 +259,20 @@ public class GamePanel extends BasePanel {
 		} else {
 			actionDelay--;
 		}
-		
-		
+
+
 		double mouseX = viewPort.getScreenToVirtualX(getMouseX());
 		double mouseY = viewPort.getScreenToVirtualY(getMouseY());
-		
+
 		if (gameClient.isState(GS_FIRSTDRAW)) {
 			ArrayList<CardObject> playerCards = new ArrayList<CardObject>();
 			playerCards.addAll(playerHand.getCards());
-			
+
 			focusedCard = null;
 			for (int i=0;i<playerCards.size();i++) {
 				if (playerCards.get(i).isInBound(mouseX, mouseY)) focusedCard = playerCards.get(i);
 			}
-			
+
 			if (isMousePressed(IM_MOUSE_BUTTON_1)) {
 				if (gameClient.isInPhase()) {
 					for (int i=0;i<playerCards.size();i++) {
@@ -283,7 +286,7 @@ public class GamePanel extends BasePanel {
 					}
 				}
 			}
-			
+
 			if (heldCard != null) {
 				heldCard.setPos(mouseX - heldOffset.getX(), mouseY - heldOffset.getY());
 				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
@@ -311,12 +314,12 @@ public class GamePanel extends BasePanel {
 			ArrayList<CardObject> playerCards = new ArrayList<CardObject>();
 			playerCards.addAll(playerHand.getCards());
 			for (int i=0;i<playerStages.length;i++) if (playerStages[i].hasCard()) playerCards.add(playerStages[i].getCard());
-			
+
 			focusedCard = null;
 			for (int i=0;i<playerCards.size();i++) {
 				if (playerCards.get(i).isInBound(mouseX, mouseY)) focusedCard = playerCards.get(i);
 			}
-			
+
 			if (isMousePressed(IM_MOUSE_BUTTON_1)) {
 				if (gameClient.isInTurn() && gameClient.isInPhase() && gameClient.isPhase(GP_MAIN)) {
 					for (int i=0;i<playerCards.size();i++) {
@@ -330,7 +333,7 @@ public class GamePanel extends BasePanel {
 					}
 				}
 			}
-			
+
 			if (heldCard != null) {
 				heldCard.setPos(mouseX - heldOffset.getX(), mouseY - heldOffset.getY());
 				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
@@ -369,7 +372,7 @@ public class GamePanel extends BasePanel {
 									pf.setCard(null);
 									heldCard.setCardField(playerHand);
 									playerHand.addCard(heldCard);
-									
+
 									for (int i=0;i<playerMoves.size();i++) {
 										if (playerMoves.get(i).getType() == PlayerMove.MT_PLACE && playerMoves.get(i).getArg(0) == heldCard.getCardID()) {
 											playerMoves.remove(i);
@@ -386,7 +389,7 @@ public class GamePanel extends BasePanel {
 				}
 			}
 		}
-		
+
 		playerHand.update();
 		opponentHand.update();
 		for (int i=0;i<playerStages.length;i++) playerStages[i].update();
@@ -395,7 +398,7 @@ public class GamePanel extends BasePanel {
 		opponentDeck.update();
 		playerWaitingRoom.update();
 		opponentWaitingRoom.update();
-		
+
 		for (int i=0;i<playerStages.length;i++) playerStages[i].highlight(mouseX, mouseY);
 		for (int i=0;i<opponentStages.length;i++) opponentStages[i].highlight(mouseX, mouseY);
 		playerDeck.highlight(mouseX, mouseY);
@@ -403,13 +406,13 @@ public class GamePanel extends BasePanel {
 		playerWaitingRoom.highlight(mouseX, mouseY);
 		opponentWaitingRoom.highlight(mouseX, mouseY);
 	}
-	
+
 	@Override
 	public void render(double ip) {
 		shaderProgram.bind();
 		shaderProgram.pushMatrix();
 		viewPort.adjustView(shaderProgram);
-		
+
 		opponentDeck.renderField(shaderProgram, ip);
 		playerDeck.renderField(shaderProgram, ip);
 		opponentWaitingRoom.renderField(shaderProgram, ip);
@@ -418,7 +421,7 @@ public class GamePanel extends BasePanel {
 		for (int i=0;i<playerStages.length;i++) playerStages[i].renderField(shaderProgram, ip);
 		opponentHand.renderField(shaderProgram, ip);
 		playerHand.renderField(shaderProgram, ip);
-		
+
 		opponentDeck.renderCards(shaderProgram, ip);
 		playerDeck.renderCards(shaderProgram, ip);
 		opponentWaitingRoom.renderCards(shaderProgram, ip);
@@ -428,7 +431,7 @@ public class GamePanel extends BasePanel {
 		opponentHand.renderCards(shaderProgram, ip);
 		playerHand.renderCards(shaderProgram, ip);
 		if (heldCard != null) heldCard.render(shaderProgram, ip);
-		
+
 		shaderProgram.setColor(1.0, 1.0, 1.0, 1.0);
 		if (focusedCard != null) {
 			shaderProgram.pushMatrix();
@@ -460,11 +463,11 @@ public class GamePanel extends BasePanel {
 				shaderProgram.popMatrix();
 			}
 		}
-		
+
 		shaderProgram.popMatrix();
 		shaderProgram.unbind();
 	}
-	
+
 	@Override
 	public void onScreenResize(int width, int height) {
 		shaderProgram.bindState();
@@ -473,5 +476,5 @@ public class GamePanel extends BasePanel {
 		viewPort.showView();
 		viewPort.projectView(shaderProgram);
 	}
-	
+
 }

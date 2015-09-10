@@ -10,23 +10,23 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class SocketThread extends Thread {
-	
+
 	private Socket socket;
-	
+
 	private BufferedReader socketIn;
 	private PrintWriter socketOut;
-	
+
 	private ArrayList<String> inbox;
-	
+
 	private boolean running;
-	
+
 	public SocketThread(String address, int port) throws UnknownHostException, IOException {
 		socket = new Socket();
 		socket.connect(new InetSocketAddress(address, port), 1000);
 		socketIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		socketOut = new PrintWriter(socket.getOutputStream(), true);
 		inbox = new ArrayList<String>();
-		
+
 		if (socketIn.readLine().contentEquals("ACCEPTED")) {
 			running = true;
 		} else {
@@ -35,11 +35,12 @@ public class SocketThread extends Thread {
 		}
 		start();
 	}
-	
+
 	public void writeToServer(String msg) {
 		socketOut.println(msg);
+		socketOut.flush();
 	}
-	
+
 	public boolean closeSocket() {
 		try {
 			writeToServer("DISCONNECT");
@@ -51,7 +52,7 @@ public class SocketThread extends Thread {
 		}
 		return !running;
 	}
-	
+
 	@Override
 	public void run() {
 		while (running) {
@@ -67,14 +68,14 @@ public class SocketThread extends Thread {
 			}
 		}
 	}
-	
+
 	public String getInbox() {
 		if (inbox.isEmpty()) return null;
 		return inbox.remove(0);
 	}
-	
+
 	public boolean isRunning() {
 		return running;
 	}
-	
+
 }
