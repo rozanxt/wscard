@@ -89,11 +89,26 @@ public abstract class GameClient extends GameSystem {
 						if (!isInTurn()) setPhase(GP_STANDUP);
 					}
 					playerTurn = turn;
+				} else if (tkns[0].contentEquals("PHASE")) {
+					int phase = Utility.parseInt(tkns[1]);
+					if (phase == GP_WAIT) {
+						actionStack.add("CLEANUP");
+						actionStack.add("OPCLEANUP");
+						if (isInTurn()) actionStack.add("OPSTANDUP");	// TODO
+					}
 				} else if (tkns[0].contentEquals("MOVE")) {
 					int mid = Utility.parseInt(tkns[1]);
 					int type = Utility.parseInt(tkns[2]);
 					if (mid == clientID) {	// TODO playerID
 						// TODO sync player data
+
+						if (type == MT_TRIGGER) {
+							actionStack.add("TRIGGER " + Utility.parseInt(tkns[3]));
+						} else if (type == MT_DAMAGE) {
+							for (int i=3;i<tkns.length;i++) actionStack.add("DAMAGE " + Utility.parseInt(tkns[i]));
+						} else if (type == MT_REVERSE) {
+							actionStack.add("REVERSE " + Utility.parseInt(tkns[3]));
+						}
 					} else {
 						if (type == MT_DRAW) {
 							for (int i=0;i<Utility.parseInt(tkns[3]);i++) actionStack.add("OPDRAW");
@@ -105,6 +120,14 @@ public abstract class GameClient extends GameSystem {
 							actionStack.add("OPMOVE " + Utility.parseInt(tkns[3]) + " " + Utility.parseInt(tkns[4]));
 						} else if (type == MT_CLOCK) {
 							actionStack.add("OPCLOCK " + Utility.parseInt(tkns[3]));
+						} else if (type == MT_ATTACK) {
+							actionStack.add("OPATTACK " + Utility.parseInt(tkns[3]) + " " + Utility.parseInt(tkns[4]));
+						} else if (type == MT_TRIGGER) {
+							actionStack.add("OPTRIGGER " + Utility.parseInt(tkns[3]));
+						} else if (type == MT_DAMAGE) {
+							for (int i=3;i<tkns.length;i++) actionStack.add("OPDAMAGE " + Utility.parseInt(tkns[i]));
+						} else if (type == MT_REVERSE) {
+							actionStack.add("OPREVERSE " + Utility.parseInt(tkns[3]));
 						}
 					}
 				} else if (tkns[0].contentEquals("DRAW")) {
@@ -131,8 +154,7 @@ public abstract class GameClient extends GameSystem {
 			} else if (isPhase(GP_MAIN)) {
 
 			} else if (isPhase(GP_ATTACK)) {
-				actionStack.add("NEXTPHASE");
-				endPhase();
+
 			} else if (isPhase(GP_END)) {
 				setPhase(GP_WAIT);
 				endTurn();

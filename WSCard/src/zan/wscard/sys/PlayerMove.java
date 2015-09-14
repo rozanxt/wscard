@@ -9,6 +9,10 @@ public class PlayerMove {
 	public static final int MT_PLACE = 4;
 	public static final int MT_MOVE = 5;
 	public static final int MT_CLOCK = 6;
+	public static final int MT_ATTACK = 7;
+	public static final int MT_TRIGGER = 8;
+	public static final int MT_DAMAGE = 9;
+	public static final int MT_REVERSE = 10;
 
 	private int type;
 	private int[] args;

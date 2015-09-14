@@ -89,6 +89,9 @@ public class CardObject {
 	public void update() {
 		if (anchor) setPos(Utility.interpolateLinear(posX, anchorX, 0.2), Utility.interpolateLinear(posY, anchorY, 0.2));
 		cardSprite.setPos(posX, posY);
+		if (cardState == 2) cardSprite.setAngle(90.0);
+		else if (cardState == 3) cardSprite.setAngle(180.0);
+		else cardSprite.setAngle(0.0);
 		cardSprite.setScale(size);
 		cardSprite.hide(hide);
 		cardSprite.update();

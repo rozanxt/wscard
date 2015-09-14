@@ -7,6 +7,7 @@ import zan.lib.gfx.texture.TextureManager;
 import zan.lib.gfx.text.TextManager;
 import zan.lib.gfx.view.ViewPort2D;
 import zan.lib.net.NetworkManager;
+import zan.lib.util.Utility;
 import zan.lib.util.math.Vec2D;
 import zan.lib.core.BasePanel;
 import static zan.lib.input.InputManager.*;
@@ -68,6 +69,7 @@ public class GamePanel extends BasePanel {
 
 	@Override
 	public void init() {
+		// Initialization
 		shaderProgram.loadProgram();
 		shaderProgram.enableBlend(true);
 
@@ -79,6 +81,7 @@ public class GamePanel extends BasePanel {
 		TextManager.init();
 		TextManager.loadFontFile("res/font/fonts.res");
 
+		// Card data / image
 		CardReader cr = new CardReader();
 		ArrayList<CardData> LHCards = cr.loadCardData("res/card/LH.wsci");
 		ArrayList<CardData> LHDeck = new ArrayList<CardData>();
@@ -107,7 +110,7 @@ public class GamePanel extends BasePanel {
 			TextureManager.loadTexture(c.id, c.image);
 		}
 
-
+		// Server & Client
 		PlayerInfo infoA = new PlayerInfo("Player A", LHDeck);
 		PlayerInfo infoB = new PlayerInfo("Player B", PDDeck);
 
@@ -131,6 +134,7 @@ public class GamePanel extends BasePanel {
 			}
 		}
 
+		// Fields
 		playerHand = new HandField();
 		playerHand.setPos(0.0, -240.0);
 		opponentHand = new HandField();
@@ -161,6 +165,7 @@ public class GamePanel extends BasePanel {
 		opponentClock = new ClockField();
 		opponentClock.setPos(250.0, 100.0);
 
+		// Miscellaneous
 		playerMoves = new ArrayList<PlayerMove>();
 
 		focusedCard = null;
@@ -181,6 +186,7 @@ public class GamePanel extends BasePanel {
 
 	@Override
 	public void update(double time) {
+		// Server & Client events
 		if (gameClient.isState(GameSystem.GS_INIT)) {
 			if (isKeyPressed(IM_KEY_SPACE)) gameClient.sendReady();
 		} else if (gameClient.isState(GameSystem.GS_FIRSTDRAW) && gameClient.isInPhase()) {
@@ -207,6 +213,12 @@ public class GamePanel extends BasePanel {
 						playerMoves.clear();
 						gameClient.nextPhase();
 					}
+				} else if (gameClient.isPhase(GameSystem.GP_ATTACK)) {
+					if (isKeyPressed(IM_KEY_SPACE)) {
+						gameClient.submitMoves(playerMoves);
+						playerMoves.clear();
+						gameClient.nextPhase();
+					}
 				}
 			}
 		}
@@ -214,7 +226,7 @@ public class GamePanel extends BasePanel {
 		if (mode == 1) gameServer.update();
 		gameClient.update();
 
-
+		// Action events
 		if (actionDelay == 0) {
 			actionMessage = "";
 			String action = gameClient.getAction();
@@ -224,6 +236,13 @@ public class GamePanel extends BasePanel {
 				if (tkns[0].contentEquals("NEXTPHASE")) {
 					gameClient.nextPhase();
 					actionDelay = 50;
+				} else if (tkns[0].contentEquals("STANDUP")) {
+					for (int i=0;i<5;i++) {
+						if (playerStages[i].hasCard()) {
+							playerStages[i].getCard().setCardState(1);
+						}
+					}
+					actionDelay = 10;
 				} else if (tkns[0].contentEquals("DRAW")) {
 					int drawn = Integer.parseInt(tkns[1]);
 					CardData c = gameClient.getPlayer().getCardData(drawn);
@@ -231,6 +250,37 @@ public class GamePanel extends BasePanel {
 					co.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
 					co.setCardField(playerHand);
 					playerHand.addCard(co);
+					actionDelay = 10;
+				} else if (tkns[0].contentEquals("TRIGGER")) {
+					// TODO
+				} else if (tkns[0].contentEquals("DAMAGE")) {
+					int id = Utility.parseInt(tkns[1]);
+					CardObject co = new CardObject(id, gameClient.getPlayer().getCardData(id));
+					co.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
+					playerClock.addCard(co);
+					actionDelay = 10;
+				} else if (tkns[0].contentEquals("REVERSE")) {
+					int reversestage = Utility.parseInt(tkns[1]);
+					playerStages[reversestage].getCard().setCardState(3);
+					actionDelay = 10;
+				} else if (tkns[0].contentEquals("CLEANUP")) {
+					for (int i=0;i<5;i++) {
+						if (playerStages[i].hasCard()) {
+							CardObject c = playerStages[i].getCard();
+							if (c.getCardState() == 3) {
+								playerStages[i].setCard(null);
+								c.setCardField(playerWaitingRoom);
+								playerWaitingRoom.addCard(c);
+							}
+						}
+					}
+					actionDelay = 10;
+				} else if (tkns[0].contentEquals("OPSTANDUP")) {
+					for (int i=0;i<5;i++) {
+						if (opponentStages[i].hasCard()) {
+							opponentStages[i].getCard().setCardState(1);
+						}
+					}
 					actionDelay = 10;
 				} else if (tkns[0].contentEquals("OPDRAW")) {
 					CardObject co = new CardObject(-1, null);
@@ -280,14 +330,42 @@ public class GamePanel extends BasePanel {
 						opponentClock.addCard(co);
 						actionDelay = 30;
 					}
-
+				} else if (tkns[0].contentEquals("OPATTACK")) {
+					// TODO int attacktype = Utility.parseInt(tkns[1]);
+					int attackstage = Utility.parseInt(tkns[2]);
+					opponentStages[attackstage].getCard().setCardState(2);
+					actionDelay = 10;
+				} else if (tkns[0].contentEquals("OPTRIGGER")) {
+					// TODO
+				} else if (tkns[0].contentEquals("OPDAMAGE")) {
+					int id = Utility.parseInt(tkns[1]);
+					CardObject co = new CardObject(id, gameClient.getOpponent().getCardData(id));
+					co.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
+					opponentClock.addCard(co);
+					actionDelay = 10;
+				} else if (tkns[0].contentEquals("OPREVERSE")) {
+					int reversestage = Utility.parseInt(tkns[1]);
+					opponentStages[reversestage].getCard().setCardState(3);
+					actionDelay = 10;
+				} else if (tkns[0].contentEquals("OPCLEANUP")) {
+					for (int i=0;i<5;i++) {
+						if (opponentStages[i].hasCard()) {
+							CardObject c = opponentStages[i].getCard();
+							if (c.getCardState() == 3) {
+								opponentStages[i].setCard(null);
+								c.setCardField(opponentWaitingRoom);
+								opponentWaitingRoom.addCard(c);
+							}
+						}
+					}
+					actionDelay = 10;
 				}
 			}
 		} else {
 			actionDelay--;
 		}
 
-
+		// Drag & Drop events
 		double mouseX = viewPort.getScreenToVirtualX(getMouseX());
 		double mouseY = viewPort.getScreenToVirtualY(getMouseY());
 
@@ -463,9 +541,56 @@ public class GamePanel extends BasePanel {
 						heldCard = null;
 					}
 				}
+			} else if (gameClient.isPhase(GP_ATTACK)) {
+				ArrayList<CardObject> playerCards = new ArrayList<CardObject>();
+				playerCards.addAll(playerHand.getCards());
+				for (int i=0;i<playerStages.length;i++) if (playerStages[i].hasCard()) playerCards.add(playerStages[i].getCard());
+				for (int i=0;i<opponentStages.length;i++) if (opponentStages[i].hasCard()) playerCards.add(opponentStages[i].getCard());
+
+				focusedCard = null;
+				for (int i=0;i<playerCards.size();i++) {
+					if (playerCards.get(i).isInBound(mouseX, mouseY)) focusedCard = playerCards.get(i);
+				}
+
+				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
+					if (gameClient.isInTurn() && gameClient.isInPhase()) {
+						heldCard = null;
+						for (int i=0;i<3;i++) {
+							CardObject hc = playerStages[i].getCard();
+							if (hc != null) {
+								if (hc.getCardState() == 1 && hc.isInBound(mouseX, mouseY)) {
+									heldCard = hc;
+								}
+							}
+						}
+					}
+				}
+
+				if (heldCard != null && heldCard.getCardField() instanceof StageField) {
+					StageField sf = (StageField)heldCard.getCardField();
+					int sid = sf.getStageID();
+					if (opponentStages[2-sid].hasCard()) {
+						if (isKeyReleased(IM_KEY_1)) {
+							heldCard.setCardState(2);
+							playerMoves.add(new PlayerMove(PlayerMove.MT_ATTACK, 1, sid));
+							heldCard = null;
+						} else if (isKeyReleased(IM_KEY_2)) {
+							heldCard.setCardState(2);
+							playerMoves.add(new PlayerMove(PlayerMove.MT_ATTACK, 2, sid));
+							heldCard = null;
+						}
+					} else {
+						if (isKeyReleased(IM_KEY_0)) {
+							heldCard.setCardState(2);
+							playerMoves.add(new PlayerMove(PlayerMove.MT_ATTACK, 0, sid));
+							heldCard = null;
+						}
+					}
+				}
 			}
 		}
 
+		// Update events
 		playerHand.update();
 		opponentHand.update();
 		for (int i=0;i<playerStages.length;i++) playerStages[i].update();
@@ -477,6 +602,7 @@ public class GamePanel extends BasePanel {
 		playerClock.update();
 		opponentClock.update();
 
+		// Highlight events
 		for (int i=0;i<playerStages.length;i++) playerStages[i].highlight(mouseX, mouseY);
 		for (int i=0;i<opponentStages.length;i++) opponentStages[i].highlight(mouseX, mouseY);
 		playerDeck.highlight(mouseX, mouseY);
@@ -493,6 +619,7 @@ public class GamePanel extends BasePanel {
 		shaderProgram.pushMatrix();
 		viewPort.adjustView(shaderProgram);
 
+		// Render fields
 		opponentClock.renderField(shaderProgram, ip);
 		playerClock.renderField(shaderProgram, ip);
 		opponentDeck.renderField(shaderProgram, ip);
@@ -504,6 +631,7 @@ public class GamePanel extends BasePanel {
 		opponentHand.renderField(shaderProgram, ip);
 		playerHand.renderField(shaderProgram, ip);
 
+		// Render cards
 		opponentClock.renderCards(shaderProgram, ip);
 		playerClock.renderCards(shaderProgram, ip);
 		opponentDeck.renderCards(shaderProgram, ip);
@@ -516,12 +644,13 @@ public class GamePanel extends BasePanel {
 		playerHand.renderCards(shaderProgram, ip);
 		if (heldCard != null) heldCard.render(shaderProgram, ip);
 
+		// Render text
 		shaderProgram.setColor(1.0, 1.0, 1.0, 1.0);
 		if (focusedCard != null) {
 			shaderProgram.pushMatrix();
 			shaderProgram.translate(-400.0, 290.0, 0.0);
 			shaderProgram.scale(10.0, 10.0, 1.0);
-			TextManager.renderText(shaderProgram, focusedCard.getCardData().name, "defont");
+			TextManager.renderText(shaderProgram, focusedCard.getCardData().name + " " + focusedCard.getCardData().power, "defont");
 			shaderProgram.popMatrix();
 		}
 		if (!actionMessage.isEmpty()) {
