@@ -18,6 +18,8 @@ public class HandField extends CardField {
 	public CardObject getCard(int card) {return handCards.get(card);}
 	public ArrayList<CardObject> getCards() {return handCards;}
 
+	public int getNumCards(){return handCards.size();}
+
 	@Override
 	public void update() {
 		for (int i=0;i<handCards.size();i++) {

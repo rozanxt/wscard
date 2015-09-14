@@ -20,6 +20,7 @@ import zan.wscard.sys.PlayerInfo;
 import zan.wscard.sys.PlayerMove;
 import zan.wscard.obj.CardField;
 import zan.wscard.obj.CardObject;
+import zan.wscard.obj.ClockField;
 import zan.wscard.obj.DeckField;
 import zan.wscard.obj.HandField;
 import zan.wscard.obj.StageField;
@@ -42,6 +43,8 @@ public class GamePanel extends BasePanel {
 	private DeckField opponentDeck;
 	private WaitingRoomField playerWaitingRoom;
 	private WaitingRoomField opponentWaitingRoom;
+	private ClockField playerClock;
+	private ClockField opponentClock;
 
 	private ArrayList<PlayerMove> playerMoves;
 
@@ -152,6 +155,11 @@ public class GamePanel extends BasePanel {
 		playerWaitingRoom.setPos(320.0, -100.0);
 		opponentWaitingRoom = new WaitingRoomField();
 		opponentWaitingRoom.setPos(-320.0, 100.0);
+		// TODO
+		playerClock = new ClockField();
+		playerClock.setPos(-250.0, -100.0);
+		opponentClock = new ClockField();
+		opponentClock.setPos(250.0, 100.0);
 
 		playerMoves = new ArrayList<PlayerMove>();
 
@@ -186,7 +194,13 @@ public class GamePanel extends BasePanel {
 			}
 		} else if (gameClient.isState(GameSystem.GS_GAME)) {
 			if (gameClient.isInTurn()) {
-				if (gameClient.isPhase(GameSystem.GP_MAIN)) {
+				if (gameClient.isPhase(GameSystem.GP_CLOCK)) {
+					if (isKeyPressed(IM_KEY_SPACE)) {
+						// TODO
+						gameClient.submitClock(-1);
+						gameClient.nextPhase();
+					}
+				} else if (gameClient.isPhase(GameSystem.GP_MAIN)) {
 					if (isKeyPressed(IM_KEY_SPACE)) {
 						for (int i=0;i<playerStages.length;i++) if (playerStages[i].getCard() != null) playerStages[i].getCard().setCardState(1);
 						gameClient.submitMoves(playerMoves);
@@ -255,6 +269,18 @@ public class GamePanel extends BasePanel {
 					if (cp != null) cp.setCardField(sf);
 					sf.setCard(cp);
 					actionDelay = 30;
+				} else if (tkns[0].contentEquals("OPCLOCK")) {
+					int id = Integer.parseInt(tkns[1]);
+					if (id != -1) {
+						CardObject ch = opponentHand.getCard(0);
+						opponentHand.removeCard(ch);
+						CardObject co = new CardObject(id, gameClient.getOpponent().getCardData(id));
+						co.setPos(ch.getAnchorX(), ch.getAnchorY());
+						co.setCardField(opponentClock);
+						opponentClock.addCard(co);
+						actionDelay = 30;
+					}
+
 				}
 			}
 		} else {
@@ -312,81 +338,130 @@ public class GamePanel extends BasePanel {
 				}
 			}
 		} else if (gameClient.isState(GS_GAME)) {
-			ArrayList<CardObject> playerCards = new ArrayList<CardObject>();
-			playerCards.addAll(playerHand.getCards());
-			for (int i=0;i<playerStages.length;i++) if (playerStages[i].hasCard()) playerCards.add(playerStages[i].getCard());
+			if (gameClient.isPhase(GP_CLOCK)) {
+				ArrayList<CardObject> playerCards = new ArrayList<CardObject>();
+				playerCards.addAll(playerHand.getCards());
 
-			focusedCard = null;
-			for (int i=0;i<playerCards.size();i++) {
-				if (playerCards.get(i).isInBound(mouseX, mouseY)) focusedCard = playerCards.get(i);
-			}
+				focusedCard = null;
+				for (int i=0;i<playerCards.size();i++) {
+					if (playerCards.get(i).isInBound(mouseX, mouseY)) focusedCard = playerCards.get(i);
+				}
 
-			if (isMousePressed(IM_MOUSE_BUTTON_1)) {
-				if (gameClient.isInTurn() && gameClient.isInPhase() && gameClient.isPhase(GP_MAIN)) {
-					for (int i=0;i<playerCards.size();i++) {
-						CardObject hc = playerCards.get(i);
-						if (hc.isInBound(mouseX, mouseY)) {
-							heldCard = hc;
-							heldCard.toggleHeld(true);
-							heldCard.toggleAnchor(false);
-							heldOffset.setComponents(mouseX - hc.getAnchorX(), mouseY - hc.getAnchorY());
+				if (isMousePressed(IM_MOUSE_BUTTON_1)) {
+					if (gameClient.isInTurn() && gameClient.isInPhase()) {
+						for (int i=0;i<playerCards.size();i++) {
+							CardObject hc = playerCards.get(i);
+							if (hc.isInBound(mouseX, mouseY)) {
+								heldCard = hc;
+								heldCard.toggleHeld(true);
+								heldCard.toggleAnchor(false);
+								heldOffset.setComponents(mouseX - hc.getAnchorX(), mouseY - hc.getAnchorY());
+							}
 						}
 					}
 				}
-			}
 
-			if (heldCard != null) {
-				heldCard.setPos(mouseX - heldOffset.getX(), mouseY - heldOffset.getY());
-				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
-					if (gameClient.isInTurn() && gameClient.isInPhase() && gameClient.isPhase(GP_MAIN)) {
-						CardField previousField = heldCard.getCardField();
-						if (previousField != null) {
-							if (previousField instanceof HandField) {
-								for (int i=0;i<playerStages.length;i++) {
-									StageField sf = playerStages[i];
-									if (sf.isInBound(mouseX, mouseY)) {
-										if (sf.getCard() == null) {
-											HandField hf = (HandField)previousField;
-											hf.removeCard(heldCard);
-											heldCard.setCardField(sf);
-											sf.setCard(heldCard);
-											playerMoves.add(new PlayerMove(PlayerMove.MT_PLACE, heldCard.getCardID(), sf.getStageID()));
+				if (heldCard != null) {
+					heldCard.setPos(mouseX - heldOffset.getX(), mouseY - heldOffset.getY());
+					if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
+						if (gameClient.isInTurn() && gameClient.isInPhase()) {
+							CardField previousField = heldCard.getCardField();
+							if (previousField != null) {
+								if (previousField instanceof HandField) {
+									if (playerClock.isInBound(mouseX, mouseY)) {
+										HandField hf = (HandField)previousField;
+										hf.removeCard(heldCard);
+										heldCard.setCardField(playerClock);
+										playerClock.addCard(heldCard);
+										// TODO
+										gameClient.submitClock(heldCard.getCardID());
+										gameClient.nextPhase();
+									}
+								}
+							}
+						}
+						heldCard.toggleHeld(false);
+						heldCard.toggleAnchor(true);
+						heldCard = null;
+					}
+				}
+			} else if (gameClient.isPhase(GP_MAIN)) {
+				ArrayList<CardObject> playerCards = new ArrayList<CardObject>();
+				playerCards.addAll(playerHand.getCards());
+				for (int i=0;i<playerStages.length;i++) if (playerStages[i].hasCard()) playerCards.add(playerStages[i].getCard());
+
+				focusedCard = null;
+				for (int i=0;i<playerCards.size();i++) {
+					if (playerCards.get(i).isInBound(mouseX, mouseY)) focusedCard = playerCards.get(i);
+				}
+
+				if (isMousePressed(IM_MOUSE_BUTTON_1)) {
+					if (gameClient.isInTurn() && gameClient.isInPhase()) {
+						for (int i=0;i<playerCards.size();i++) {
+							CardObject hc = playerCards.get(i);
+							if (hc.isInBound(mouseX, mouseY)) {
+								heldCard = hc;
+								heldCard.toggleHeld(true);
+								heldCard.toggleAnchor(false);
+								heldOffset.setComponents(mouseX - hc.getAnchorX(), mouseY - hc.getAnchorY());
+							}
+						}
+					}
+				}
+
+				if (heldCard != null) {
+					heldCard.setPos(mouseX - heldOffset.getX(), mouseY - heldOffset.getY());
+					if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
+						if (gameClient.isInTurn() && gameClient.isInPhase()) {
+							CardField previousField = heldCard.getCardField();
+							if (previousField != null) {
+								if (previousField instanceof HandField) {
+									for (int i=0;i<playerStages.length;i++) {
+										StageField sf = playerStages[i];
+										if (sf.isInBound(mouseX, mouseY)) {
+											if (sf.getCard() == null) {
+												HandField hf = (HandField)previousField;
+												hf.removeCard(heldCard);
+												heldCard.setCardField(sf);
+												sf.setCard(heldCard);
+												playerMoves.add(new PlayerMove(PlayerMove.MT_PLACE, heldCard.getCardID(), sf.getStageID()));
+											}
 										}
 									}
-								}
-							} else if (previousField instanceof StageField) {
-								boolean isMoved = false;
-								for (int i=0;i<playerStages.length;i++) {
-									StageField sf = playerStages[i];
-									if (sf.isInBound(mouseX, mouseY)) {
-										StageField pf = (StageField)previousField;
-										if (sf.getCard() != null) sf.getCard().setCardField(pf);
-										pf.setCard(sf.getCard());
-										heldCard.setCardField(sf);
-										sf.setCard(heldCard);
-										playerMoves.add(new PlayerMove(PlayerMove.MT_MOVE, pf.getStageID(), sf.getStageID()));
-										isMoved = true;
+								} else if (previousField instanceof StageField) {
+									boolean isMoved = false;
+									for (int i=0;i<playerStages.length;i++) {
+										StageField sf = playerStages[i];
+										if (sf.isInBound(mouseX, mouseY)) {
+											StageField pf = (StageField)previousField;
+											if (sf.getCard() != null) sf.getCard().setCardField(pf);
+											pf.setCard(sf.getCard());
+											heldCard.setCardField(sf);
+											sf.setCard(heldCard);
+											playerMoves.add(new PlayerMove(PlayerMove.MT_MOVE, pf.getStageID(), sf.getStageID()));
+											isMoved = true;
+										}
 									}
-								}
-								if (heldCard.getCardState() == 0 && !isMoved) {
-									StageField pf = (StageField)previousField;
-									pf.setCard(null);
-									heldCard.setCardField(playerHand);
-									playerHand.addCard(heldCard);
+									if (heldCard.getCardState() == 0 && !isMoved) {
+										StageField pf = (StageField)previousField;
+										pf.setCard(null);
+										heldCard.setCardField(playerHand);
+										playerHand.addCard(heldCard);
 
-									for (int i=0;i<playerMoves.size();i++) {
-										if (playerMoves.get(i).getType() == PlayerMove.MT_PLACE && playerMoves.get(i).getArg(0) == heldCard.getCardID()) {
-											playerMoves.remove(i);
-											break;
+										for (int i=0;i<playerMoves.size();i++) {
+											if (playerMoves.get(i).getType() == PlayerMove.MT_PLACE && playerMoves.get(i).getArg(0) == heldCard.getCardID()) {
+												playerMoves.remove(i);
+												break;
+											}
 										}
 									}
 								}
 							}
 						}
+						heldCard.toggleHeld(false);
+						heldCard.toggleAnchor(true);
+						heldCard = null;
 					}
-					heldCard.toggleHeld(false);
-					heldCard.toggleAnchor(true);
-					heldCard = null;
 				}
 			}
 		}
@@ -399,6 +474,8 @@ public class GamePanel extends BasePanel {
 		opponentDeck.update();
 		playerWaitingRoom.update();
 		opponentWaitingRoom.update();
+		playerClock.update();
+		opponentClock.update();
 
 		for (int i=0;i<playerStages.length;i++) playerStages[i].highlight(mouseX, mouseY);
 		for (int i=0;i<opponentStages.length;i++) opponentStages[i].highlight(mouseX, mouseY);
@@ -406,6 +483,8 @@ public class GamePanel extends BasePanel {
 		opponentDeck.highlight(mouseX, mouseY);
 		playerWaitingRoom.highlight(mouseX, mouseY);
 		opponentWaitingRoom.highlight(mouseX, mouseY);
+		playerClock.highlight(mouseX, mouseY);
+		opponentClock.highlight(mouseX, mouseY);
 	}
 
 	@Override
@@ -414,6 +493,8 @@ public class GamePanel extends BasePanel {
 		shaderProgram.pushMatrix();
 		viewPort.adjustView(shaderProgram);
 
+		opponentClock.renderField(shaderProgram, ip);
+		playerClock.renderField(shaderProgram, ip);
 		opponentDeck.renderField(shaderProgram, ip);
 		playerDeck.renderField(shaderProgram, ip);
 		opponentWaitingRoom.renderField(shaderProgram, ip);
@@ -423,6 +504,8 @@ public class GamePanel extends BasePanel {
 		opponentHand.renderField(shaderProgram, ip);
 		playerHand.renderField(shaderProgram, ip);
 
+		opponentClock.renderCards(shaderProgram, ip);
+		playerClock.renderCards(shaderProgram, ip);
 		opponentDeck.renderCards(shaderProgram, ip);
 		playerDeck.renderCards(shaderProgram, ip);
 		opponentWaitingRoom.renderCards(shaderProgram, ip);
