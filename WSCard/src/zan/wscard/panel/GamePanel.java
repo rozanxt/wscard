@@ -180,6 +180,7 @@ public class GamePanel extends BasePanel {
 	@Override
 	public void destroy() {
 		// TODO
+		gameClient.printLog();
 		NetworkManager.closeClient();
 		if (mode == 1) NetworkManager.closeServer();
 	}

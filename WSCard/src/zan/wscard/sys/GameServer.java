@@ -8,17 +8,17 @@ import static zan.wscard.sys.PlayerMove.*;
 
 public abstract class GameServer extends GameSystem {
 
-	protected PlayerServer playerA, playerB;
+	protected PlayerServer playerA = new PlayerServer();
+	protected PlayerServer playerB = new PlayerServer();
 
-	protected boolean readyA, readyB;
+	protected boolean readyA = false;
+	protected boolean readyB = false;
 
-	public GameServer() {
-		super();
-		playerA = new PlayerServer();
-		playerB = new PlayerServer();
-		readyA = false;
-		readyB = false;
-	}
+	protected ArrayList<String> serverLog = new ArrayList<String>();
+	protected int logCountA = 0;
+	protected int logCountB = 0;
+	protected boolean waitForVerificationA = false;
+	protected boolean waitForVerificationB = false;
 
 	public void initServer(PlayerInfo infoA, PlayerInfo infoB) {
 		playerA.setInfo(infoA);
@@ -29,130 +29,162 @@ public abstract class GameServer extends GameSystem {
 		if (playerTurn == PL_A) playerTurn = PL_B;
 		else if (playerTurn == PL_B) playerTurn = PL_A;
 		else playerTurn = PL_A;	// TODO
-		writeToAllClients("TURN " + playerTurn);
+		sendToAllClients("TURN " + playerTurn);
 	}
 
 	protected void doDrawCards(int cid, int num) {
 		ArrayList<Integer> drawn = getPlayer(cid).drawCards(num);
 		String m = "DRAW";
 		for (int i=0;i<drawn.size();i++) m += " " + drawn.get(i);
-		writeToClient(cid, m);
+		sendToClient(cid, m);
 	}
 
-	public void update() {
-		String msg = getInbox();
-		while (msg != null && !msg.isEmpty()) {
-			String[] tkns = msg.split(" ");
-			int cid = Utility.parseInt(tkns[0]);
+	protected void doAttack(int cid, int type, int stage) {
+		PlayerServer player = getPlayer(cid);
+		CardData attacker = player.getCardData(player.getStageCard(stage));
+		int trigger = player.triggerCard();
+		int triggersoul = player.getCardData(trigger).soul;	// TODO trigger parsing
+		int damage = 0;
+		if (type == 0) {
+			damage = attacker.soul + triggersoul + 1;
+		} else if (type == 1) {
+			damage = attacker.soul + triggersoul;
+		} else if (type == 2) {
+			CardData defender = getPlayer(((cid == PL_A)?PL_B:PL_A)).getCardData(getPlayer(((cid == PL_A)?PL_B:PL_A)).getStageCard(2-stage));
+			damage = attacker.soul + triggersoul - defender.level;
+		}
+		ArrayList<Integer> damaged = getPlayer(((cid == PL_A)?PL_B:PL_A)).damageCards(damage);
+		sendToAllClients("MOVE " + cid + " " + MT_TRIGGER + " " + trigger);
+		String m = "MOVE " + ((cid == PL_A)?PL_B:PL_A) + " " + MT_DAMAGE;
+		for (int i=0;i<damaged.size();i++) m += " " + damaged.get(i);
+		sendToAllClients(m);
 
-			if (isState(GS_INIT)) {
-				if (tkns[1].contentEquals("READY")) {
+		if (type != 0) {
+			CardData defender = getPlayer(((cid == PL_A)?PL_B:PL_A)).getCardData(getPlayer(((cid == PL_A)?PL_B:PL_A)).getStageCard(2-stage));
+			if (attacker.power > defender.power) {
+				sendToAllClients("MOVE " + ((cid == PL_A)?PL_B:PL_A) + " " + MT_REVERSE + " " + (2-stage));
+			} else if (attacker.power < defender.power) {
+				sendToAllClients("MOVE " + cid + " " + MT_REVERSE + " " + stage);
+			} else {
+				sendToAllClients("MOVE " + cid + " " + MT_REVERSE + " " + stage);
+				sendToAllClients("MOVE " + ((cid == PL_A)?PL_B:PL_A) + " " + MT_REVERSE + " " + (2-stage));
+			}
+		}
+	}
+
+	public void processMessage(int cid, String[] tkns) {
+		if (isState(GS_INIT)) {
+			if (tkns[0].contentEquals("READY")) {
+				if (cid == PL_A) readyA = true;
+				else if (cid == PL_B) readyB = true;
+				if (readyA && readyB) {
+					readyA = false;
+					readyB = false;
+					setState(GS_FIRSTDRAW);
+					doDrawCards(PL_A, 5);
+					doDrawCards(PL_B, 5);
+					sendToAllClients("MOVE 0 2 5");
+					sendToAllClients("MOVE 1 2 5");
+				}
+			}
+		} else if (isState(GS_FIRSTDRAW)) {
+			if (tkns[0].contentEquals("DO")) {
+				int type = Utility.parseInt(tkns[1]);
+
+				// TODO
+				String m = "MOVE " + cid + " " + type;
+				for (int i=2;i<tkns.length;i++) m += " " + Utility.parseInt(tkns[i]);
+				sendToAllClients(m);
+
+				if (type == MT_ENDTURN) {
 					if (cid == PL_A) readyA = true;
 					else if (cid == PL_B) readyB = true;
 					if (readyA && readyB) {
 						readyA = false;
 						readyB = false;
-						setState(GS_FIRSTDRAW);
-						doDrawCards(PL_A, 5);
-						doDrawCards(PL_B, 5);
-						writeToAllClients("MOVE 0 2 5");
-						writeToAllClients("MOVE 1 2 5");
+						setState(GS_GAME);
+						doChangeTurn();
 					}
+				} else if (type == MT_DRAW) {
+					doDrawCards(cid, Utility.parseInt(tkns[2]));
+				} else if (type == MT_DISCARD) {
+					getPlayer(cid).discardCard(Utility.parseInt(tkns[2]));
 				}
-			} else if (isState(GS_FIRSTDRAW)) {
-				if (tkns[1].contentEquals("DO")) {
-					int type = Utility.parseInt(tkns[2]);
+			}
+		} else if (isState(GS_GAME)) {
+			if (tkns[0].contentEquals("PHASE")) {
+				if (cid == playerTurn) setPhase(Utility.parseInt(tkns[1]));
+			} else if (tkns[0].contentEquals("DO")) {
+				int type = Utility.parseInt(tkns[1]);
 
+				if (cid == playerTurn) {
 					// TODO
 					String m = "MOVE " + cid + " " + type;
-					for (int i=3;i<tkns.length;i++) m += " " + Utility.parseInt(tkns[i]);
-					writeToAllClients(m);
+					for (int i=2;i<tkns.length;i++) m += " " + Utility.parseInt(tkns[i]);
+					sendToAllClients(m);
 
 					if (type == MT_ENDTURN) {
-						if (cid == PL_A) readyA = true;
-						else if (cid == PL_B) readyB = true;
-						if (readyA && readyB) {
-							readyA = false;
-							readyB = false;
-							setState(GS_GAME);
-							doChangeTurn();
-						}
+						doChangeTurn();
 					} else if (type == MT_DRAW) {
-						doDrawCards(cid, Utility.parseInt(tkns[3]));
+						doDrawCards(cid, Utility.parseInt(tkns[2]));
 					} else if (type == MT_DISCARD) {
-						if (cid == PL_A) playerA.discardCard(Utility.parseInt(tkns[3]));
-						else if (cid == PL_B) playerB.discardCard(Utility.parseInt(tkns[3]));
+						getPlayer(cid).discardCard(Utility.parseInt(tkns[2]));
+					} else if (type == MT_PLACE) {
+						getPlayer(cid).placeCard(Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
+					} else if (type == MT_MOVE) {
+						getPlayer(cid).moveCard(Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
+					} else if (type == MT_CLOCK) {
+						getPlayer(cid).clockCard(Utility.parseInt(tkns[2]));
+					} else if (type == MT_ATTACK) {
+						doAttack(cid, Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
 					}
 				}
-			} else if (isState(GS_GAME)) {
-				if (tkns[1].contentEquals("PHASE")) {
-					if (cid == playerTurn) setPhase(Utility.parseInt(tkns[2]));
-				} else if (tkns[1].contentEquals("DO")) {
-					int type = Utility.parseInt(tkns[2]);
+			}
+		} else if (isState(GS_END)) {
 
-					if (cid == playerTurn) {
-						// TODO
-						String m = "MOVE " + cid + " " + type;
-						for (int i=3;i<tkns.length;i++) m += " " + Utility.parseInt(tkns[i]);
-						writeToAllClients(m);
+		}
+	}
 
-						if (type == MT_ENDTURN) {
-							doChangeTurn();
-						} else if (type == MT_DRAW) {
-							doDrawCards(cid, Utility.parseInt(tkns[3]));
-						} else if (type == MT_DISCARD) {
-							if (cid == PL_A) playerA.discardCard(Utility.parseInt(tkns[3]));
-							else if (cid == PL_B) playerB.discardCard(Utility.parseInt(tkns[3]));
-						} else if (type == MT_PLACE) {
-							if (cid == PL_A) playerA.placeCard(Utility.parseInt(tkns[3]), Utility.parseInt(tkns[4]));
-							else if (cid == PL_B) playerB.placeCard(Utility.parseInt(tkns[3]), Utility.parseInt(tkns[4]));
-						} else if (type == MT_MOVE) {
-							if (cid == PL_A) playerA.moveCard(Utility.parseInt(tkns[3]), Utility.parseInt(tkns[4]));
-							else if (cid == PL_B) playerB.moveCard(Utility.parseInt(tkns[3]), Utility.parseInt(tkns[4]));
-						} else if (type == MT_CLOCK) {
-							if (cid == PL_A) playerA.clockCard(Utility.parseInt(tkns[3]));
-							else if (cid == PL_B) playerB.clockCard(Utility.parseInt(tkns[3]));
-						} else if (type == MT_ATTACK) {
-							int attacktype = Utility.parseInt(tkns[3]);
-							int attackstage = Utility.parseInt(tkns[4]);
-							PlayerServer player = getPlayer(cid);
-							CardData attacker = player.getCardData(player.getStageCard(attackstage));
-							int trigger = player.triggerCard();
-							int triggersoul = player.getCardData(trigger).soul;	// TODO trigger parsing
-							int damage = 0;
-							if (attacktype == 0) {
-								damage = attacker.soul + triggersoul + 1;
-							} else if (attacktype == 1) {
-								damage = attacker.soul + triggersoul;
-							} else if (attacktype == 2) {
-								CardData defender = getPlayer(((cid == PL_A)?PL_B:PL_A)).getCardData(getPlayer(((cid == PL_A)?PL_B:PL_A)).getStageCard(2-attackstage));
-								damage = attacker.soul + triggersoul - defender.level;
-							}
-							ArrayList<Integer> damaged = getPlayer(((cid == PL_A)?PL_B:PL_A)).damageCards(damage);
-							writeToAllClients("MOVE " + cid + " " + MT_TRIGGER + " " + trigger);
-							m = "MOVE " + ((cid == PL_A)?PL_B:PL_A) + " " + MT_DAMAGE;
-							for (int i=0;i<damaged.size();i++) m += " " + damaged.get(i);
-							writeToAllClients(m);
-
-							if (attacktype != 0) {
-								CardData defender = getPlayer(((cid == PL_A)?PL_B:PL_A)).getCardData(getPlayer(((cid == PL_A)?PL_B:PL_A)).getStageCard(2-attackstage));
-								if (attacker.power > defender.power) {
-									writeToAllClients("MOVE " + ((cid == PL_A)?PL_B:PL_A) + " " + MT_REVERSE + " " + (2-attackstage));
-								} else if (attacker.power < defender.power) {
-									writeToAllClients("MOVE " + cid + " " + MT_REVERSE + " " + attackstage);
-								} else {
-									writeToAllClients("MOVE " + cid + " " + MT_REVERSE + " " + attackstage);
-									writeToAllClients("MOVE " + ((cid == PL_A)?PL_B:PL_A) + " " + MT_REVERSE + " " + (2-attackstage));
-								}
-							}
+	public void update() {
+		String msg;
+		while ((msg = getInbox()) != null) {
+			String[] chunk = msg.split(" ");
+			if (chunk.length > 2) {
+				int cid = Utility.parseInt(chunk[0]);
+				if (chunk[1].contentEquals("VERIFY")) {
+					for (int i=Utility.parseInt(chunk[2]);i<serverLog.size();i++) {
+						String ver = serverLog.get(i);
+						if (ver.startsWith("ALL")) {
+							writeToClient(cid, ver.substring(4));
+						} else if (ver.startsWith(chunk[0])) {
+							writeToClient(cid, ver.substring(chunk[0].length()+1));
+						}
+					}
+				} else {
+					int cnt = Utility.parseInt(chunk[1]);
+					String[] tkns = new String[chunk.length-2];
+					for (int i=2;i<chunk.length;i++) tkns[i-2] = chunk[i];
+					if (cid == PL_A) {
+						if (cnt == logCountA) {
+							processMessage(cid, tkns);
+							logCountA++;
+							waitForVerificationA = false;
+						} else if (!waitForVerificationA) {
+							writeToClient(cid, "VERIFY " + logCountA);
+							waitForVerificationA = true;
+						}
+					} else if (cid == PL_B) {
+						if (cnt == logCountB) {
+							processMessage(cid, tkns);
+							logCountB++;
+							waitForVerificationB = false;
+						} else if (!waitForVerificationB) {
+							writeToClient(cid, "VERIFY " + logCountB);
+							waitForVerificationB = true;
 						}
 					}
 				}
-			} else if (isState(GS_END)) {
-
 			}
-
-			msg = getInbox();
 		}
 	}
 
@@ -167,12 +199,22 @@ public abstract class GameServer extends GameSystem {
 	@Override
 	protected void setState(int state) {
 		super.setState(state);
-		writeToAllClients("STATE " + gameState);
+		sendToAllClients("STATE " + gameState);
 	}
 	@Override
 	protected void setPhase(int phase) {
 		super.setPhase(phase);
-		writeToAllClients("PHASE " + gamePhase);
+		sendToAllClients("PHASE " + gamePhase);
+	}
+
+	protected void sendToClient(int cid, String msg) {
+		serverLog.add(cid + " " + serverLog.size() + " " + msg);
+		writeToClient(cid, (serverLog.size()-1) + " " + msg);
+	}
+
+	protected void sendToAllClients(String msg) {
+		serverLog.add("ALL " + serverLog.size() + " " + msg);
+		writeToAllClients((serverLog.size()-1) + " " + msg);
 	}
 
 	protected abstract void writeToClient(int cid, String msg);

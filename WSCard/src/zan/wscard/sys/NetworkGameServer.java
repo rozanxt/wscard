@@ -6,8 +6,6 @@ public class NetworkGameServer extends GameServer {
 
 	private static boolean DEBUG = true;
 
-	public NetworkGameServer() {super();}
-
 	protected void writeToClient(int cid, String msg) {
 		NetworkManager.writeToClient(cid, msg);
 		if (DEBUG && msg != null) System.out.println("SERVER OUT " + cid + ": " + msg);

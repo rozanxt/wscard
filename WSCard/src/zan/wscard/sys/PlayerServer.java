@@ -46,9 +46,9 @@ public class PlayerServer extends Player {
 	}
 
 	public void moveCard(int stage1, int stage2) {
-		int temp = stage1;
-		stage1 = stage2;
-		stage2 = temp;
+		int temp = playerStage[stage1];
+		playerStage[stage1] = playerStage[stage2];
+		playerStage[stage2] = temp;
 	}
 
 	public void clockCard(int card) {
