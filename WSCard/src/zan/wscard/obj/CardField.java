@@ -5,18 +5,14 @@ import zan.lib.gfx.shader.DefaultShader;
 public abstract class CardField {
 
 	protected double posX, posY;
-	protected double size;
+	protected double size = CardObject.cardSize;
 
-	protected boolean highlight;	// TODO
+	protected boolean highlight = false;	// TODO
 
-	public CardField() {
-		posX = 0.0;
-		posY = 0.0;
-		size = CardObject.cardSize;
+	public CardField(double x, double y) {
+		posX = x;
+		posY = y;
 	}
-
-	public void setPos(double sx, double sy) {posX = sx; posY = sy;}
-	public void setSize(double size) {this.size = size;}
 
 	public double getAnchorX() {return posX;}
 	public double getAnchorY() {return posY;}

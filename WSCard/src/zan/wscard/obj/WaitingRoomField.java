@@ -13,7 +13,8 @@ public class WaitingRoomField extends CardField {
 
 	protected VertexObject vObj;
 
-	public WaitingRoomField() {
+	public WaitingRoomField(double x, double y) {
+		super(x, y);
 		waitingRoomCards = new ArrayList<CardObject>();
 
 		final int[] ind = {0, 1, 2, 3};
@@ -30,7 +31,10 @@ public class WaitingRoomField extends CardField {
 		vObj.destroy();
 	}
 
-	public void addCard(CardObject card) {waitingRoomCards.add(card);}
+	public void addCard(CardObject card) {
+		card.setCardField(this);
+		waitingRoomCards.add(card);
+	}
 	public void removeCard(CardObject card) {waitingRoomCards.remove(card);}
 
 	public CardObject getCard(int card) {return waitingRoomCards.get(card);}

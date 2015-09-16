@@ -54,6 +54,7 @@ public class PlayerServer extends Player {
 	public void clockCard(int card) {
 		for (int i=0;i<playerHand.size();i++) if (playerHand.get(i) == card) playerHand.remove(i);
 		playerClock.add(card);
+		if (playerClock.size() == 7) levelUp();
 	}
 
 	public int triggerCard() {
@@ -70,8 +71,15 @@ public class PlayerServer extends Player {
 			int drawn = playerDeck.remove(0);
 			damagedCards.add(drawn);
 			playerClock.add(drawn);
+			if (playerClock.size() == 7) levelUp();
 		}
 		return damagedCards;
+	}
+
+	public void levelUp() {
+		playerLevel.add(playerClock.get(0));
+		for (int i=1;i<playerClock.size();i++) playerWaitingRoom.add(playerClock.get(i));
+		playerClock.clear();
 	}
 
 }

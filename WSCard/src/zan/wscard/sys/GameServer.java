@@ -131,7 +131,7 @@ public abstract class GameServer extends GameSystem {
 						getPlayer(cid).discardCard(Utility.parseInt(tkns[2]));
 					} else if (type == MT_PLACE) {
 						getPlayer(cid).placeCard(Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
-					} else if (type == MT_MOVE) {
+					} else if (type == MT_SWAP) {
 						getPlayer(cid).moveCard(Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
 					} else if (type == MT_CLOCK) {
 						getPlayer(cid).clockCard(Utility.parseInt(tkns[2]));

@@ -12,7 +12,8 @@ public class StageField extends CardField {
 
 	protected VertexObject vObj;
 
-	public StageField(int sid) {
+	public StageField(int sid, double x, double y) {
+		super(x, y);
 		stageID = sid;
 
 		cardObj = null;
@@ -31,7 +32,10 @@ public class StageField extends CardField {
 		vObj.destroy();
 	}
 
-	public void setCard(CardObject cardObj) {this.cardObj = cardObj;}
+	public void setCard(CardObject card) {
+		cardObj = card;
+		if (cardObj != null) cardObj.setCardField(this);
+	}
 	public CardObject getCard() {return cardObj;}
 
 	public int getStageID() {return stageID;}

@@ -25,17 +25,6 @@ public abstract class GameClient extends GameSystem {
 	}
 
 	public void nextPhase() {setPhase(++gamePhase);}
-	public void submitRedraw(ArrayList<Integer> redraw) {
-		String m = "DO " + MT_DISCARD;
-		for (int i=0;i<redraw.size();i++) m += " " + redraw.get(i);
-		sendToServer(m);
-		sendToServer("DO " + MT_DRAW + " " + redraw.size());
-		sendToServer("DO " + MT_ENDTURN);
-	}
-	public void submitClock(int card) {
-		sendToServer("DO " + MT_CLOCK + " " + card);
-		if (card != -1) sendToServer("DO " + MT_DRAW + " 2");
-	}
 	public void submitMoves(ArrayList<PlayerMove> moves) {
 		for (int i=0;i<moves.size();i++) {
 			String m = "DO " + moves.get(i).getType();
@@ -44,7 +33,7 @@ public abstract class GameClient extends GameSystem {
 		}
 	}
 	public void sendReady() {sendToServer("READY");}
-	public void endTurn() {sendToServer("DO " + MT_ENDTURN);}
+	private void endTurn() {sendToServer("DO " + MT_ENDTURN);}
 	public void endPhase() {inPhase = false;}
 
 	public void processMessage(String[] tkns) {
@@ -105,7 +94,7 @@ public abstract class GameClient extends GameSystem {
 						for (int i=3;i<tkns.length;i++) actionStack.add("OPDISCARD " + Utility.parseInt(tkns[i]));
 					} else if (type == MT_PLACE) {
 						actionStack.add("OPPLACE " + Utility.parseInt(tkns[3]) + " " + Utility.parseInt(tkns[4]));
-					} else if (type == MT_MOVE) {
+					} else if (type == MT_SWAP) {
 						actionStack.add("OPMOVE " + Utility.parseInt(tkns[3]) + " " + Utility.parseInt(tkns[4]));
 					} else if (type == MT_CLOCK) {
 						actionStack.add("OPCLOCK " + Utility.parseInt(tkns[3]));

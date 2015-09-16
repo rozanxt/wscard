@@ -8,11 +8,16 @@ public class HandField extends CardField {
 
 	protected ArrayList<CardObject> handCards;
 
-	public HandField() {
+	public HandField(double x, double y) {
+		super(x, y);
 		handCards = new ArrayList<CardObject>();
 	}
 
-	public void addCard(CardObject card) {handCards.add(card);}
+	public void addCard(CardObject card) {
+		card.setCardField(this);
+		handCards.add(card);
+
+	}
 	public void removeCard(CardObject card) {handCards.remove(card);}
 
 	public CardObject getCard(int card) {return handCards.get(card);}

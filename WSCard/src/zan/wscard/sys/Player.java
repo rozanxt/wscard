@@ -20,6 +20,7 @@ public abstract class Player {
 	protected ArrayList<Integer> playerClock;
 	protected ArrayList<Integer> playerStock;
 	protected ArrayList<Integer> playerHand;
+	protected ArrayList<Integer> playerLevel;
 	protected int[] playerStage;
 	protected int[] playerStageState;
 
@@ -30,6 +31,7 @@ public abstract class Player {
 		playerClock = new ArrayList<Integer>();
 		playerStock = new ArrayList<Integer>();
 		playerHand = new ArrayList<Integer>();
+		playerLevel = new ArrayList<Integer>();
 		playerStage = new int[5];
 		for (int i=0;i<5;i++) playerStage[i] = NO_CARD;
 		playerStageState = new int[5];

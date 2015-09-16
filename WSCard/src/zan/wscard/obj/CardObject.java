@@ -8,6 +8,11 @@ import zan.wscard.gfx.CardSprite;
 
 public class CardObject {
 
+	public static final int CS_NONE = 0;
+	public static final int CS_STAND = 1;
+	public static final int CS_REST = 2;
+	public static final int CS_REVERSE = 3;
+
 	public static final double cardSize = 80.0;
 	public static final double cardRatio = (500.0/730.0);
 
@@ -27,7 +32,7 @@ public class CardObject {
 
 	public CardObject(int id, CardData data) {
 		cardID = id;
-		cardState = 0;	// TODO
+		cardState = CS_NONE;
 		cardData = data;
 		cardField = null;
 		if (cardData == null) cardSprite = new CardSprite(TextureManager.getTexture("CARDBACK"), TextureManager.getTexture("CARDBACK"));

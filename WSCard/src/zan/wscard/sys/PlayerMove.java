@@ -7,7 +7,7 @@ public class PlayerMove {
 	public static final int MT_DRAW = 2;
 	public static final int MT_DISCARD = 3;
 	public static final int MT_PLACE = 4;
-	public static final int MT_MOVE = 5;
+	public static final int MT_SWAP = 5;
 	public static final int MT_CLOCK = 6;
 	public static final int MT_ATTACK = 7;
 	public static final int MT_TRIGGER = 8;

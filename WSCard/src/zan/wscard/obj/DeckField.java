@@ -12,7 +12,8 @@ public class DeckField extends CardField {
 
 	protected VertexObject vObj;
 
-	public DeckField() {
+	public DeckField(double x, double y) {
+		super(x, y);
 		deckSprite = new CardSprite(TextureManager.getTexture("CARDBACK"), TextureManager.getTexture("CARDBACK"));
 
 		final int[] ind = {0, 1, 2, 3};

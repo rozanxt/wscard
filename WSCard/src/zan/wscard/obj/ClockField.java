@@ -13,7 +13,8 @@ public class ClockField extends CardField {
 
 	protected VertexObject field;
 
-	public ClockField() {
+	public ClockField(double x, double y) {
+		super(x, y);
 		clockCards = new ArrayList<CardObject>();
 
 		final int[] ind = {0, 1, 2, 3};
@@ -30,7 +31,10 @@ public class ClockField extends CardField {
 		field.destroy();
 	}
 
-	public void addCard(CardObject card) {clockCards.add(card);}
+	public void addCard(CardObject card) {
+		card.setCardField(this);
+		clockCards.add(card);
+	}
 
 	@Override
 	public boolean isInBound(double sx, double sy) {
