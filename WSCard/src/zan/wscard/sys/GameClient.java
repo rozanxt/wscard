@@ -59,7 +59,6 @@ public abstract class GameClient extends GameSystem {
 							int drawn = Utility.parseInt(tkns[i]);
 							if (drawn == NO_CARD) actionStack.add("OPRESHUFFLE");
 							else actionStack.add("OPDRAW");
-							System.out.println(drawn);
 						}
 					} else if (type == MT_DISCARD) {
 						for (int i=3;i<tkns.length;i++) actionStack.add("OPDISCARD " + Utility.parseInt(tkns[i]));
@@ -95,11 +94,21 @@ public abstract class GameClient extends GameSystem {
 					if (type == MT_TRIGGER) {
 						actionStack.add("TRIGGER " + Utility.parseInt(tkns[3]));
 					} else if (type == MT_DAMAGE) {
-						for (int i=3;i<tkns.length;i++) actionStack.add("DAMAGE " + Utility.parseInt(tkns[i]));
+						for (int i=3;i<tkns.length;i++) {
+							int drawn = Utility.parseInt(tkns[i]);
+							if (drawn == NO_CARD) actionStack.add("RESHUFFLE");
+							else actionStack.add("DAMAGE " + drawn);
+						}
 					} else if (type == MT_CANCELDAMAGE) {
-						for (int i=3;i<tkns.length;i++) actionStack.add("CANCELDAMAGE " + Utility.parseInt(tkns[i]));
+						for (int i=3;i<tkns.length;i++) {
+							int drawn = Utility.parseInt(tkns[i]);
+							if (drawn == NO_CARD) actionStack.add("RESHUFFLE");
+							else actionStack.add("CANCELDAMAGE " + drawn);
+						}
 					} else if (type == MT_REVERSE) {
 						actionStack.add("REVERSE " + Utility.parseInt(tkns[3]));
+					} else if (type == MT_RESHUFFLE) {
+						actionStack.add("RESHUFFLECOST " + Utility.parseInt(tkns[3]));
 					}
 				} else {
 					if (type == MT_DRAW) {
@@ -107,7 +116,6 @@ public abstract class GameClient extends GameSystem {
 							int drawn = Utility.parseInt(tkns[i]);
 							if (drawn == NO_CARD) actionStack.add("OPRESHUFFLE");
 							else actionStack.add("OPDRAW");
-							System.out.println(drawn);
 						}
 					} else if (type == MT_DISCARD) {
 						for (int i=3;i<tkns.length;i++) actionStack.add("OPDISCARD " + Utility.parseInt(tkns[i]));
@@ -122,11 +130,21 @@ public abstract class GameClient extends GameSystem {
 					} else if (type == MT_TRIGGER) {
 						actionStack.add("OPTRIGGER " + Utility.parseInt(tkns[3]));
 					} else if (type == MT_DAMAGE) {
-						for (int i=3;i<tkns.length;i++) actionStack.add("OPDAMAGE " + Utility.parseInt(tkns[i]));
+						for (int i=3;i<tkns.length;i++) {
+							int drawn = Utility.parseInt(tkns[i]);
+							if (drawn == NO_CARD) actionStack.add("OPRESHUFFLE");
+							else actionStack.add("OPDAMAGE " + drawn);
+						}
 					} else if (type == MT_CANCELDAMAGE) {
-						for (int i=3;i<tkns.length;i++) actionStack.add("OPCANCELDAMAGE " + Utility.parseInt(tkns[i]));
+						for (int i=3;i<tkns.length;i++) {
+							int drawn = Utility.parseInt(tkns[i]);
+							if (drawn == NO_CARD) actionStack.add("OPRESHUFFLE");
+							else actionStack.add("OPCANCELDAMAGE " + drawn);
+						}
 					} else if (type == MT_REVERSE) {
 						actionStack.add("OPREVERSE " + Utility.parseInt(tkns[3]));
+					} else if (type == MT_RESHUFFLE) {
+						actionStack.add("OPRESHUFFLECOST " + Utility.parseInt(tkns[3]));
 					} else if (type == MT_LEVELUP) {
 						actionStack.add("OPLEVELUP " + Utility.parseInt(tkns[3]));
 					}
@@ -135,6 +153,7 @@ public abstract class GameClient extends GameSystem {
 				if (type == MT_LEVELUP) {
 					super.setPhase(storedPhase);
 					storedPhase = GP_WAIT;
+					inPhase = true;
 				}
 			} else if (tkns[0].contentEquals("DRAW")) {
 				for (int i=1;i<tkns.length;i++) {

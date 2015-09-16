@@ -2,6 +2,7 @@ package zan.wscard.gui;
 
 import java.util.ArrayList;
 
+import zan.lib.gfx.obj.VertexObject;
 import zan.lib.gfx.shader.DefaultShader;
 import zan.lib.gfx.text.TextManager;
 import zan.lib.util.Utility;
@@ -17,6 +18,7 @@ import zan.wscard.obj.StockField;
 import zan.wscard.obj.WaitingRoomField;
 import zan.wscard.sys.GameClient;
 import zan.wscard.sys.PlayerMove;
+import static org.lwjgl.opengl.GL11.GL_TRIANGLE_FAN;
 import static zan.wscard.sys.GameSystem.*;
 import static zan.wscard.sys.PlayerMove.*;
 import static zan.wscard.obj.CardObject.*;
@@ -43,6 +45,8 @@ public class GameGUI {
 
 	private ArrayList<PlayerMove> playerMoves = new ArrayList<PlayerMove>();
 
+	private VertexObject selected;
+
 	private int actionDelay = 0;
 
 	private double mouseX = 0.0;
@@ -59,11 +63,11 @@ public class GameGUI {
 		playerWaitingRoom = new WaitingRoomField(320.0, -100.0);
 		opponentWaitingRoom = new WaitingRoomField(-320.0, 100.0);
 
-		playerClock = new ClockField(-250.0, -100.0);
-		opponentClock = new ClockField(250.0, 100.0);
+		playerClock = new ClockField(-250.0, -135.0);
+		opponentClock = new ClockField(250.0, 135.0);
 
-		playerLevel = new LevelField(-250.0, -20.0);
-		opponentLevel = new LevelField(250.0, 20.0);
+		playerLevel = new LevelField(-250.0, -40.0);
+		opponentLevel = new LevelField(250.0, 40.0);
 
 		playerStock = new StockField(-250.0, -50.0);
 		opponentStock = new StockField(250.0, 50.0);
@@ -81,6 +85,15 @@ public class GameGUI {
 			if (i < 3) opponentStages[i] = new StageField(i, 60.0-60.0*i, 50.0);
 			else opponentStages[i] = new StageField(i, 30.0-60.0*(i-3), 135.0);
 		}
+
+		final int[] ind = {0, 1, 2, 3};
+		final float[] ver = {
+			-0.5f*(float)CardObject.cardRatio, -0.5f,
+			0.5f*(float)CardObject.cardRatio, -0.5f,
+			0.5f*(float)CardObject.cardRatio, 0.5f,
+			-0.5f*(float)CardObject.cardRatio, 0.5f,
+		};
+		selected = new VertexObject(ver, ind, 2, 0, 0, 0, GL_TRIANGLE_FAN);
 	}
 
 	public void destroy() {
@@ -221,30 +234,31 @@ public class GameGUI {
 			return;
 		}
 
-		if (selectedCard == null) {
-			if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
-				// Selects a card from the center stage
-				for (int i=0;i<3;i++) {
-					CardObject sc = playerStages[i].getCard();
-					if (sc != null) {
-						if (sc.getCardState() == CS_STAND && sc.isInBound(mouseX, mouseY)) {
-							selectedCard = sc;
-							break;
-						}
+		if (isMousePressed(IM_MOUSE_BUTTON_1)) {
+			// Selects a card from the center stage
+			selectedCard = null;
+			for (int i=0;i<3;i++) {
+				CardObject sc = playerStages[i].getCard();
+				if (sc != null) {
+					if (sc.getCardState() == CS_STAND && sc.isInBound(mouseX, mouseY)) {
+						selectedCard = sc;
+						break;
 					}
 				}
 			}
-		} else {
+		}
+
+		if (selectedCard != null) {
 			StageField sf = (StageField)selectedCard.getCardField();
 			int sid = sf.getStageID();
 			if (opponentStages[2-sid].hasCard()) {
-				if (isKeyReleased(IM_KEY_1)) {
+				if (isKeyPressed(IM_KEY_1)) {
 					// Submits frontal attack
 					selectedCard.setCardState(2);
 					playerMoves.add(new PlayerMove(MT_ATTACK, 1, sid));
 					submitMoves(playerMoves);
 					selectedCard = null;
-				} else if (isKeyReleased(IM_KEY_2)) {
+				} else if (isKeyPressed(IM_KEY_2)) {
 					// Submits side attack
 					selectedCard.setCardState(2);
 					playerMoves.add(new PlayerMove(MT_ATTACK, 2, sid));
@@ -252,7 +266,7 @@ public class GameGUI {
 					selectedCard = null;
 				}
 			} else {
-				if (isKeyReleased(IM_KEY_0)) {
+				if (isKeyPressed(IM_KEY_0)) {
 					// Submits direct attack
 					selectedCard.setCardState(2);
 					playerMoves.add(new PlayerMove(MT_ATTACK, 0, sid));
@@ -260,36 +274,37 @@ public class GameGUI {
 					selectedCard = null;
 				}
 			}
-			if (isMouseReleased(IM_MOUSE_BUTTON_1)) selectedCard = null;
 		}
 	}
 
 	private void onLevelUp() {
-		if (heldCard == null) {
-			if (isMousePressed(IM_MOUSE_BUTTON_1)) checkDragFromClock();
-		} else {
-			holdCard();
-			if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
-				if (playerLevel.isInBound(mouseX, mouseY)) {
-					// Level up
-					playerHand.removeCard(heldCard);
+		if (playerClock.getNumCards() >= 7) {
+			if (heldCard == null) {
+				if (isMousePressed(IM_MOUSE_BUTTON_1)) checkDragFromClock();
+			} else {
+				holdCard();
+				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
+					if (playerLevel.isInBound(mouseX, mouseY)) {
+						// Level up
+						playerHand.removeCard(heldCard);
 
-					for (int i=0;i<7;i++) {
-						if (playerClock.getCard(i).getCardID() == heldCard.getCardID()) {
-							playerLevel.addCard(playerClock.getCard(i));
-						} else {
-							playerWaitingRoom.addCard(playerClock.getCard(i));
+						for (int i=0;i<7;i++) {
+							if (playerClock.getCard(i).getCardID() == heldCard.getCardID()) {
+								playerLevel.addCard(playerClock.getCard(i));
+							} else {
+								playerWaitingRoom.addCard(playerClock.getCard(i));
+							}
 						}
-					}
-					for (int i=0;i<7;i++) {
-						playerClock.removeCard(playerClock.getCard(0));
-					}
+						for (int i=0;i<7;i++) {
+							playerClock.removeCard(playerClock.getCard(0));
+						}
 
-					playerMoves.add(new PlayerMove(MT_LEVELUP, heldCard.getCardID()));
-					submitMoves(playerMoves);
-					gameClient.endPhase();
+						playerMoves.add(new PlayerMove(MT_LEVELUP, heldCard.getCardID()));
+						submitMoves(playerMoves);
+						gameClient.endPhase();
+					}
+					dropCard();
 				}
-				dropCard();
 			}
 		}
 	}
@@ -316,7 +331,8 @@ public class GameGUI {
 				} else if (gameClient.isPhase(GP_END)) {
 
 				}
-			} else if (gameClient.isPhase(GP_LEVELUP)) {
+			}
+			if (gameClient.isPhase(GP_LEVELUP)) {
 				onLevelUp();
 			}
 		} else if (gameClient.isState(GS_END)) {
@@ -368,7 +384,7 @@ public class GameGUI {
 	}
 	private boolean checkDragFromClock() {
 		if (heldCard != null) return false;
-		for (int i=0;i<7;i++) {
+		for (int i=6;i>=0;i--) {
 			if (playerClock.getCard(i).isInBound(mouseX, mouseY)) {
 				dragCard(playerClock.getCard(i));
 				return true;
@@ -398,8 +414,14 @@ public class GameGUI {
 			activeCards.add(card);
 			actionDelay = 10;
 		} else if (tkns[0].contentEquals("RESHUFFLE")) {
-			// TODO
+			playerWaitingRoom.clearWaitingRoom();
 			actionDelay = 50;
+		} else if (tkns[0].contentEquals("RESHUFFLECOST")) {
+			int id = Utility.parseInt(tkns[1]);
+			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
+			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
+			playerClock.addCard(card);
+			actionDelay = 30;
 		} else if (tkns[0].contentEquals("DAMAGE")) {
 			int id = Utility.parseInt(tkns[1]);
 			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
@@ -440,8 +462,14 @@ public class GameGUI {
 			opponentHand.addCard(card);
 			actionDelay = 10;
 		} else if (tkns[0].contentEquals("OPRESHUFFLE")) {
-			// TODO
+			opponentWaitingRoom.clearWaitingRoom();
 			actionDelay = 50;
+		} else if (tkns[0].contentEquals("OPRESHUFFLECOST")) {
+			int id = Utility.parseInt(tkns[1]);
+			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
+			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
+			opponentClock.addCard(card);
+			actionDelay = 30;
 		} else if (tkns[0].contentEquals("OPDISCARD")) {
 			int id = Utility.parseInt(tkns[1]);
 			CardObject hand = opponentHand.getCard(0);
@@ -614,6 +642,16 @@ public class GameGUI {
 
 		if (heldCard != null) heldCard.render(sp, ip);
 
+		if (selectedCard != null) {
+			sp.setColor(0.0, 0.8, 0.5, 0.25);
+			sp.pushMatrix();
+			sp.translate(selectedCard.getAnchorX(), selectedCard.getAnchorY(), 0.0);
+			sp.scale(CardObject.cardSize, CardObject.cardSize, 1.0);
+			sp.applyModelMatrix();
+			selected.render(sp);
+			sp.popMatrix();
+		}
+
 		sp.setColor(1.0, 1.0, 1.0, 1.0);
 		if (hoveredCard != null) {
 			sp.pushMatrix();
@@ -656,7 +694,7 @@ public class GameGUI {
 			else if (gameClient.isPhase(GP_END)) TextManager.renderText(sp, "End Phase", "defont");
 			else if (gameClient.isPhase(GP_LEVELUP)) TextManager.renderText(sp, "Level Up!", "defont");
 			sp.popMatrix();
-		} else if (gameClient.isState(GS_END)) {
+		} else if (gameClient.isState(GS_END) && winner != PL_NONE) {
 			sp.pushMatrix();
 			sp.translate(-400.0, 288.0, 0.0);
 			sp.scale(12.0, 12.0, 1.0);

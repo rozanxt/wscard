@@ -40,6 +40,7 @@ public class Player {
 
 	public void reshuffleDeck() {
 		for (int i=0;i<playerWaitingRoom.size();i++) playerDeck.add(playerWaitingRoom.get(i));
+		playerWaitingRoom.clear();
 		shuffleDeck();
 	}
 

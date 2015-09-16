@@ -147,6 +147,8 @@ public abstract class GameServer extends GameSystem {
 		int trigger = player.triggerCard();
 		if (player.isDeckEmpty()) {
 			doReshuffleDeck(cid);
+			// TODO send reshuffle
+			sendToClient(cid, "DRAW -1");
 			doReshuffleCost(cid);
 		}
 		int triggersoul = 0;	// TODO
@@ -265,7 +267,7 @@ public abstract class GameServer extends GameSystem {
 							sendToAllClients("WINNER " + PL_B);
 						}
 					} else if (levelUpB) {
-						if (getPlayer(PL_A).getLevel() < 3) {
+						if (getPlayer(PL_B).getLevel() < 3) {
 							levelUpB = false;
 							levelUp = PL_B;
 							sendToAllClients("NOTIFYLEVELUP " + levelUp);

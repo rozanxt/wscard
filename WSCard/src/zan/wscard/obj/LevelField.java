@@ -52,7 +52,7 @@ public class LevelField extends CardField {
 	@Override
 	public void update() {
 		for (int i=0;i<levelCards.size();i++) {
-			levelCards.get(i).setAnchor(posX+30.0*i, posY+30.0*i);
+			levelCards.get(i).setAnchor(posX+5.0*i, posY+5.0*i);
 			levelCards.get(i).update();
 		}
 	}
@@ -61,7 +61,7 @@ public class LevelField extends CardField {
 	public void renderCards(DefaultShader sp, double ip) {
 		for (int i=0;i<levelCards.size();i++) {
 			sp.pushMatrix();
-			sp.translate(posX+30.0*i, posY+30.0*i, 0.0);
+			sp.translate(posX+5.0*i, posY+5.0*i, 0.0);
 			sp.scale(size, size, 1.0);
 			sp.applyModelMatrix();
 			sp.popMatrix();

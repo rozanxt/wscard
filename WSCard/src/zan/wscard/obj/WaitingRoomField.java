@@ -37,6 +37,8 @@ public class WaitingRoomField extends CardField {
 	}
 	public void removeCard(CardObject card) {waitingRoomCards.remove(card);}
 
+	public void clearWaitingRoom() {waitingRoomCards.clear();}
+
 	public CardObject getCard(int card) {return waitingRoomCards.get(card);}
 
 	@Override
