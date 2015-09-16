@@ -16,12 +16,10 @@ public class HandField extends CardField {
 	public void addCard(CardObject card) {
 		card.setCardField(this);
 		handCards.add(card);
-
 	}
 	public void removeCard(CardObject card) {handCards.remove(card);}
 
 	public CardObject getCard(int card) {return handCards.get(card);}
-	public ArrayList<CardObject> getCards() {return handCards;}
 
 	public int getNumCards(){return handCards.size();}
 

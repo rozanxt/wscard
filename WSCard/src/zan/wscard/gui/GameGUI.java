@@ -48,6 +48,8 @@ public class GameGUI {
 	private double mouseX = 0.0;
 	private double mouseY = 0.0;
 
+	private int winner = PL_NONE;
+
 	public GameGUI(GameClient client) {
 		gameClient = client;
 
@@ -60,8 +62,8 @@ public class GameGUI {
 		playerClock = new ClockField(-250.0, -100.0);
 		opponentClock = new ClockField(250.0, 100.0);
 
-		playerLevel = new LevelField(-250.0, -150.0);
-		opponentLevel = new LevelField(250.0, 150.0);
+		playerLevel = new LevelField(-250.0, -20.0);
+		opponentLevel = new LevelField(250.0, 20.0);
 
 		playerStock = new StockField(-250.0, -50.0);
 		opponentStock = new StockField(250.0, 50.0);
@@ -187,7 +189,7 @@ public class GameGUI {
 							StageField pf = (StageField)previousField;
 							pf.setCard(sf.getCard());
 							sf.setCard(heldCard);
-							playerMoves.add(new PlayerMove(PlayerMove.MT_SWAP, pf.getStageID(), sf.getStageID()));
+							playerMoves.add(new PlayerMove(MT_SWAP, pf.getStageID(), sf.getStageID()));
 							any = true;
 							break;
 						}
@@ -199,7 +201,7 @@ public class GameGUI {
 						playerHand.addCard(heldCard);
 
 						for (int i=0;i<playerMoves.size();i++) {
-							if (playerMoves.get(i).getType() == PlayerMove.MT_PLACE && playerMoves.get(i).getArg(0) == heldCard.getCardID()) {
+							if (playerMoves.get(i).getType() == MT_PLACE && playerMoves.get(i).getArg(0) == heldCard.getCardID()) {
 								playerMoves.remove(i);
 								break;
 							}
@@ -239,13 +241,13 @@ public class GameGUI {
 				if (isKeyReleased(IM_KEY_1)) {
 					// Submits frontal attack
 					selectedCard.setCardState(2);
-					playerMoves.add(new PlayerMove(PlayerMove.MT_ATTACK, 1, sid));
+					playerMoves.add(new PlayerMove(MT_ATTACK, 1, sid));
 					submitMoves(playerMoves);
 					selectedCard = null;
 				} else if (isKeyReleased(IM_KEY_2)) {
 					// Submits side attack
 					selectedCard.setCardState(2);
-					playerMoves.add(new PlayerMove(PlayerMove.MT_ATTACK, 2, sid));
+					playerMoves.add(new PlayerMove(MT_ATTACK, 2, sid));
 					submitMoves(playerMoves);
 					selectedCard = null;
 				}
@@ -253,12 +255,42 @@ public class GameGUI {
 				if (isKeyReleased(IM_KEY_0)) {
 					// Submits direct attack
 					selectedCard.setCardState(2);
-					playerMoves.add(new PlayerMove(PlayerMove.MT_ATTACK, 0, sid));
+					playerMoves.add(new PlayerMove(MT_ATTACK, 0, sid));
 					submitMoves(playerMoves);
 					selectedCard = null;
 				}
 			}
 			if (isMouseReleased(IM_MOUSE_BUTTON_1)) selectedCard = null;
+		}
+	}
+
+	private void onLevelUp() {
+		if (heldCard == null) {
+			if (isMousePressed(IM_MOUSE_BUTTON_1)) checkDragFromClock();
+		} else {
+			holdCard();
+			if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
+				if (playerLevel.isInBound(mouseX, mouseY)) {
+					// Level up
+					playerHand.removeCard(heldCard);
+
+					for (int i=0;i<7;i++) {
+						if (playerClock.getCard(i).getCardID() == heldCard.getCardID()) {
+							playerLevel.addCard(playerClock.getCard(i));
+						} else {
+							playerWaitingRoom.addCard(playerClock.getCard(i));
+						}
+					}
+					for (int i=0;i<7;i++) {
+						playerClock.removeCard(playerClock.getCard(0));
+					}
+
+					playerMoves.add(new PlayerMove(MT_LEVELUP, heldCard.getCardID()));
+					submitMoves(playerMoves);
+					gameClient.endPhase();
+				}
+				dropCard();
+			}
 		}
 	}
 
@@ -284,6 +316,8 @@ public class GameGUI {
 				} else if (gameClient.isPhase(GP_END)) {
 
 				}
+			} else if (gameClient.isPhase(GP_LEVELUP)) {
+				onLevelUp();
 			}
 		} else if (gameClient.isState(GS_END)) {
 			onEnd();
@@ -332,10 +366,20 @@ public class GameGUI {
 		}
 		return false;
 	}
+	private boolean checkDragFromClock() {
+		if (heldCard != null) return false;
+		for (int i=0;i<7;i++) {
+			if (playerClock.getCard(i).isInBound(mouseX, mouseY)) {
+				dragCard(playerClock.getCard(i));
+				return true;
+			}
+		}
+		return false;
+	}
 
 	// Action Events
 
-	private void doActionEvent(String[] tkns) {
+	private void doActionEvent(String[] tkns) {	// TODO TRIGGER, RESHUFFLE
 		if (tkns[0].contentEquals("NEXTPHASE")) {
 			gameClient.nextPhase();
 			actionDelay = 50;
@@ -353,11 +397,20 @@ public class GameGUI {
 			playerHand.addCard(card);
 			activeCards.add(card);
 			actionDelay = 10;
+		} else if (tkns[0].contentEquals("RESHUFFLE")) {
+			// TODO
+			actionDelay = 50;
 		} else if (tkns[0].contentEquals("DAMAGE")) {
 			int id = Utility.parseInt(tkns[1]);
 			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
 			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
 			playerClock.addCard(card);
+			actionDelay = 20;
+		} else if (tkns[0].contentEquals("CANCELDAMAGE")) {
+			int id = Utility.parseInt(tkns[1]);
+			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
+			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
+			playerWaitingRoom.addCard(card);
 			actionDelay = 20;
 		} else if (tkns[0].contentEquals("REVERSE")) {
 			int stage = Utility.parseInt(tkns[1]);
@@ -386,6 +439,9 @@ public class GameGUI {
 			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
 			opponentHand.addCard(card);
 			actionDelay = 10;
+		} else if (tkns[0].contentEquals("OPRESHUFFLE")) {
+			// TODO
+			actionDelay = 50;
 		} else if (tkns[0].contentEquals("OPDISCARD")) {
 			int id = Utility.parseInt(tkns[1]);
 			CardObject hand = opponentHand.getCard(0);
@@ -430,6 +486,12 @@ public class GameGUI {
 			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
 			opponentClock.addCard(card);
 			actionDelay = 20;
+		} else if (tkns[0].contentEquals("OPCANCELDAMAGE")) {
+			int id = Utility.parseInt(tkns[1]);
+			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
+			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
+			opponentWaitingRoom.addCard(card);
+			actionDelay = 20;
 		} else if (tkns[0].contentEquals("OPREVERSE")) {
 			int stage = Utility.parseInt(tkns[1]);
 			opponentStages[stage].getCard().setCardState(CS_REVERSE);
@@ -445,6 +507,20 @@ public class GameGUI {
 				}
 			}
 			actionDelay = 50;
+		} else if (tkns[0].contentEquals("OPLEVELUP")) {
+			int id = Utility.parseInt(tkns[1]);
+			for (int i=0;i<7;i++) {
+				if (opponentClock.getCard(i).getCardID() == id) {
+					opponentLevel.addCard(opponentClock.getCard(i));
+				} else {
+					opponentWaitingRoom.addCard(opponentClock.getCard(i));
+				}
+			}
+			for (int i=0;i<7;i++) {
+				opponentClock.removeCard(opponentClock.getCard(0));
+			}
+		} else if (tkns[0].contentEquals("WINNER")) {
+			winner = Utility.parseInt(tkns[1]);
 		} else if (tkns[0].contentEquals("")) {
 			// TODO
 		}
@@ -578,6 +654,14 @@ public class GameGUI {
 			else if (gameClient.isPhase(GP_MAIN)) TextManager.renderText(sp, "Main Phase", "defont");
 			else if (gameClient.isPhase(GP_ATTACK)) TextManager.renderText(sp, "Attack Phase", "defont");
 			else if (gameClient.isPhase(GP_END)) TextManager.renderText(sp, "End Phase", "defont");
+			else if (gameClient.isPhase(GP_LEVELUP)) TextManager.renderText(sp, "Level Up!", "defont");
+			sp.popMatrix();
+		} else if (gameClient.isState(GS_END)) {
+			sp.pushMatrix();
+			sp.translate(-400.0, 288.0, 0.0);
+			sp.scale(12.0, 12.0, 1.0);
+			if (winner == gameClient.getClientID()) TextManager.renderText(sp, "YOU HAVE WON!", "defont");
+			else TextManager.renderText(sp, "YOU HAVE LOST!", "defont");
 			sp.popMatrix();
 		}
 	}

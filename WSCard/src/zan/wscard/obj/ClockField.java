@@ -35,6 +35,11 @@ public class ClockField extends CardField {
 		card.setCardField(this);
 		clockCards.add(card);
 	}
+	public void removeCard(CardObject card) {clockCards.remove(card);}
+
+	public CardObject getCard(int card) {return clockCards.get(card);}
+
+	public int getNumCards(){return clockCards.size();}
 
 	@Override
 	public boolean isInBound(double sx, double sy) {

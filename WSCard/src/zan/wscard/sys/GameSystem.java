@@ -14,6 +14,7 @@ public abstract class GameSystem {
 	public static final int GP_MAIN = 4;
 	public static final int GP_ATTACK = 5;
 	public static final int GP_END = 6;
+	public static final int GP_LEVELUP = 7;
 
 	public static final int PL_NONE = -1;
 	public static final int PL_A = 0;

@@ -12,7 +12,10 @@ public class PlayerMove {
 	public static final int MT_ATTACK = 7;
 	public static final int MT_TRIGGER = 8;
 	public static final int MT_DAMAGE = 9;
-	public static final int MT_REVERSE = 10;
+	public static final int MT_CANCELDAMAGE = 10;
+	public static final int MT_REVERSE = 11;
+	public static final int MT_RESHUFFLE = 12;
+	public static final int MT_LEVELUP = 13;
 
 	private int type;
 	private int[] args;

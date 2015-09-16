@@ -3,14 +3,15 @@ package zan.wscard.sys;
 import java.util.ArrayList;
 
 import zan.lib.util.Utility;
+import static zan.wscard.sys.Player.NO_CARD;
 import static zan.wscard.sys.PlayerMove.*;
 
 public abstract class GameClient extends GameSystem {
 
 	protected int clientID = PL_NONE;
 
-	protected PlayerClient player = new PlayerClient();
-	protected PlayerClient opponent = new PlayerClient();
+	protected Player player = new Player();
+	protected Player opponent = new Player();
 
 	protected ArrayList<String> actionStack = new ArrayList<String>();
 	protected ArrayList<String> clientLog = new ArrayList<String>();
@@ -18,6 +19,8 @@ public abstract class GameClient extends GameSystem {
 	protected boolean waitForVerification = false;
 
 	protected boolean inPhase = false;
+
+	protected int storedPhase = GP_WAIT;
 
 	public void initClient(PlayerInfo infoPlayer, PlayerInfo infoOpponent) {
 		player.setInfo(infoPlayer);
@@ -52,13 +55,22 @@ public abstract class GameClient extends GameSystem {
 					// TODO sync player data
 				} else {
 					if (type == MT_DRAW) {
-						for (int i=0;i<Utility.parseInt(tkns[3]);i++) actionStack.add("OPDRAW");
+						for (int i=3;i<tkns.length;i++) {
+							int drawn = Utility.parseInt(tkns[i]);
+							if (drawn == NO_CARD) actionStack.add("OPRESHUFFLE");
+							else actionStack.add("OPDRAW");
+							System.out.println(drawn);
+						}
 					} else if (type == MT_DISCARD) {
 						for (int i=3;i<tkns.length;i++) actionStack.add("OPDISCARD " + Utility.parseInt(tkns[i]));
 					}
 				}
 			} else if (tkns[0].contentEquals("DRAW")) {
-				for (int i=1;i<tkns.length;i++) actionStack.add("DRAW " + Utility.parseInt(tkns[i]));
+				for (int i=1;i<tkns.length;i++) {
+					int drawn = Utility.parseInt(tkns[i]);
+					if (drawn == NO_CARD) actionStack.add("RESHUFFLE");
+					else actionStack.add("DRAW " + drawn);
+				}
 			}
 		} else if (isState(GS_GAME)) {
 			if (tkns[0].contentEquals("TURN")) {
@@ -84,12 +96,19 @@ public abstract class GameClient extends GameSystem {
 						actionStack.add("TRIGGER " + Utility.parseInt(tkns[3]));
 					} else if (type == MT_DAMAGE) {
 						for (int i=3;i<tkns.length;i++) actionStack.add("DAMAGE " + Utility.parseInt(tkns[i]));
+					} else if (type == MT_CANCELDAMAGE) {
+						for (int i=3;i<tkns.length;i++) actionStack.add("CANCELDAMAGE " + Utility.parseInt(tkns[i]));
 					} else if (type == MT_REVERSE) {
 						actionStack.add("REVERSE " + Utility.parseInt(tkns[3]));
 					}
 				} else {
 					if (type == MT_DRAW) {
-						for (int i=0;i<Utility.parseInt(tkns[3]);i++) actionStack.add("OPDRAW");
+						for (int i=3;i<tkns.length;i++) {
+							int drawn = Utility.parseInt(tkns[i]);
+							if (drawn == NO_CARD) actionStack.add("OPRESHUFFLE");
+							else actionStack.add("OPDRAW");
+							System.out.println(drawn);
+						}
 					} else if (type == MT_DISCARD) {
 						for (int i=3;i<tkns.length;i++) actionStack.add("OPDISCARD " + Utility.parseInt(tkns[i]));
 					} else if (type == MT_PLACE) {
@@ -104,16 +123,39 @@ public abstract class GameClient extends GameSystem {
 						actionStack.add("OPTRIGGER " + Utility.parseInt(tkns[3]));
 					} else if (type == MT_DAMAGE) {
 						for (int i=3;i<tkns.length;i++) actionStack.add("OPDAMAGE " + Utility.parseInt(tkns[i]));
+					} else if (type == MT_CANCELDAMAGE) {
+						for (int i=3;i<tkns.length;i++) actionStack.add("OPCANCELDAMAGE " + Utility.parseInt(tkns[i]));
 					} else if (type == MT_REVERSE) {
 						actionStack.add("OPREVERSE " + Utility.parseInt(tkns[3]));
+					} else if (type == MT_LEVELUP) {
+						actionStack.add("OPLEVELUP " + Utility.parseInt(tkns[3]));
 					}
 				}
+
+				if (type == MT_LEVELUP) {
+					super.setPhase(storedPhase);
+					storedPhase = GP_WAIT;
+				}
 			} else if (tkns[0].contentEquals("DRAW")) {
-				for (int i=1;i<tkns.length;i++) actionStack.add("DRAW " + Utility.parseInt(tkns[i]));
+				for (int i=1;i<tkns.length;i++) {
+					int drawn = Utility.parseInt(tkns[i]);
+					if (drawn == NO_CARD) actionStack.add("RESHUFFLE");
+					else actionStack.add("DRAW " + drawn);
+				}
 				if (isPhase(GP_DRAW)) actionStack.add("NEXTPHASE");
+			} else if (tkns[0].contentEquals("NOTIFYLEVELUP")) {
+				storedPhase = gamePhase;
+				int levelup = Utility.parseInt(tkns[1]);
+				if (levelup == clientID) {
+					super.setPhase(GP_LEVELUP);
+				} else {
+					super.setPhase(GP_WAIT);
+				}
 			}
 		} else if (isState(GS_END)) {
-
+			if (tkns[0].contentEquals("WINNER")) {
+				actionStack.add("WINNER " + Utility.parseInt(tkns[1]));
+			}
 		}
 	}
 
@@ -167,11 +209,13 @@ public abstract class GameClient extends GameSystem {
 		return actionStack.remove(0);
 	}
 
-	public PlayerClient getPlayer() {return player;}
-	public PlayerClient getOpponent() {return opponent;}
+	public Player getPlayer() {return player;}
+	public Player getOpponent() {return opponent;}
 
 	public boolean isInTurn() {return (playerTurn == clientID);}
 	public boolean isInPhase() {return inPhase;}
+
+	public int getClientID() {return clientID;}
 
 	@Override
 	protected void setPhase(int phase) {

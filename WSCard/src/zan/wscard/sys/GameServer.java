@@ -5,11 +5,12 @@ import java.util.ArrayList;
 import zan.lib.util.Utility;
 import zan.wscard.card.CardData;
 import static zan.wscard.sys.PlayerMove.*;
+import static zan.wscard.sys.Player.NO_CARD;
 
 public abstract class GameServer extends GameSystem {
 
-	protected PlayerServer playerA = new PlayerServer();
-	protected PlayerServer playerB = new PlayerServer();
+	protected Player playerA = new Player();
+	protected Player playerB = new Player();
 
 	protected boolean readyA = false;
 	protected boolean readyB = false;
@@ -20,9 +21,22 @@ public abstract class GameServer extends GameSystem {
 	protected boolean waitForVerificationA = false;
 	protected boolean waitForVerificationB = false;
 
+	protected int reshuffledA = 0;
+	protected int reshuffledB = 0;
+	protected boolean levelUpA = false;
+	protected boolean levelUpB = false;
+	protected int levelUp = PL_NONE;
+
 	public void initServer(PlayerInfo infoA, PlayerInfo infoB) {
 		playerA.setInfo(infoA);
 		playerB.setInfo(infoB);
+	}
+
+	protected void sendMove(int cid, int type, int... args) {
+		StringBuilder msg = new StringBuilder();
+		msg.append("MOVE ").append(cid).append(" ").append(type);
+		for (int i=0;i<args.length;i++) msg.append(" ").append(args[i]);
+		sendToAllClients(msg.toString());
 	}
 
 	protected void doChangeTurn() {
@@ -32,44 +46,156 @@ public abstract class GameServer extends GameSystem {
 		sendToAllClients("TURN " + playerTurn);
 	}
 
-	protected void doDrawCards(int cid, int num) {
-		ArrayList<Integer> drawn = getPlayer(cid).drawCards(num);
-		String m = "DRAW";
-		for (int i=0;i<drawn.size();i++) m += " " + drawn.get(i);
-		sendToClient(cid, m);
+	protected void doReshuffleDeck(int cid) {
+		getPlayer(cid).reshuffleDeck();
+		if (cid == PL_A) reshuffledA++;
+		else if (cid == PL_B) reshuffledB++;
 	}
-
-	protected void doAttack(int cid, int type, int stage) {
-		PlayerServer player = getPlayer(cid);
-		CardData attacker = player.getCardData(player.getStageCard(stage));
-		int trigger = player.triggerCard();
-		int triggersoul = player.getCardData(trigger).soul;	// TODO trigger parsing
-		int damage = 0;
-		if (type == 0) {
-			damage = attacker.soul + triggersoul + 1;
-		} else if (type == 1) {
-			damage = attacker.soul + triggersoul;
-		} else if (type == 2) {
-			CardData defender = getPlayer(((cid == PL_A)?PL_B:PL_A)).getCardData(getPlayer(((cid == PL_A)?PL_B:PL_A)).getStageCard(2-stage));
-			damage = attacker.soul + triggersoul - defender.level;
-		}
-		ArrayList<Integer> damaged = getPlayer(((cid == PL_A)?PL_B:PL_A)).damageCards(damage);
-		sendToAllClients("MOVE " + cid + " " + MT_TRIGGER + " " + trigger);
-		String m = "MOVE " + ((cid == PL_A)?PL_B:PL_A) + " " + MT_DAMAGE;
-		for (int i=0;i<damaged.size();i++) m += " " + damaged.get(i);
-		sendToAllClients(m);
-
-		if (type != 0) {
-			CardData defender = getPlayer(((cid == PL_A)?PL_B:PL_A)).getCardData(getPlayer(((cid == PL_A)?PL_B:PL_A)).getStageCard(2-stage));
-			if (attacker.power > defender.power) {
-				sendToAllClients("MOVE " + ((cid == PL_A)?PL_B:PL_A) + " " + MT_REVERSE + " " + (2-stage));
-			} else if (attacker.power < defender.power) {
-				sendToAllClients("MOVE " + cid + " " + MT_REVERSE + " " + stage);
-			} else {
-				sendToAllClients("MOVE " + cid + " " + MT_REVERSE + " " + stage);
-				sendToAllClients("MOVE " + ((cid == PL_A)?PL_B:PL_A) + " " + MT_REVERSE + " " + (2-stage));
+	protected void doReshuffleCost(int cid) {
+		if (cid == PL_A) {
+			if (reshuffledA > 0) {
+				for (int i=0;i<reshuffledA;i++) sendMove(cid, MT_RESHUFFLE, getPlayer(cid).reshuffleCost());
+				reshuffledA = 0;
+			}
+		} else if (cid == PL_B) {
+			if (reshuffledB > 0) {
+				for (int i=0;i<reshuffledB;i++) sendMove(cid, MT_RESHUFFLE, getPlayer(cid).reshuffleCost());
+				reshuffledB = 0;
 			}
 		}
+	}
+
+	protected void sendDrawCards(int cid, ArrayList<Integer> cards) {
+		if (!cards.isEmpty()) {
+			StringBuilder msg = new StringBuilder();
+			msg.append("DRAW");
+			int[] drawn = new int[cards.size()];
+			for (int i=0;i<cards.size();i++) {
+				msg.append(" ").append(cards.get(i));
+				if (cards.get(i) == NO_CARD) drawn[i] = NO_CARD;
+				else drawn[i] = 0;
+			}
+			sendToClient(cid, msg.toString());
+			sendMove(cid, MT_DRAW, drawn);
+			cards.clear();
+		}
+	}
+	protected void doDrawCards(int cid, int num) {
+		ArrayList<Integer> cards = new ArrayList<Integer>();
+		for (int i=0;i<num;i++) {
+			int drawn = getPlayer(cid).drawCard();
+			cards.add(drawn);
+			if (getPlayer(cid).isDeckEmpty()) {
+				cards.add(NO_CARD);
+				doReshuffleDeck(cid);
+			}
+		}
+		sendDrawCards(cid, cards);
+		doReshuffleCost(cid);
+	}
+
+	protected void doDiscardCard(int cid, int card) {
+		getPlayer(cid).discardCard(card);
+		sendMove(cid, MT_DISCARD, card);
+	}
+
+	protected void doPlaceCard(int cid, int card, int stage) {
+		getPlayer(cid).placeCard(card, stage);
+		sendMove(cid, MT_PLACE, card, stage);
+	}
+
+	protected void doSwapCard(int cid, int stage1, int stage2) {
+		getPlayer(cid).swapCard(stage1, stage2);
+		sendMove(cid, MT_SWAP, stage1, stage2);
+	}
+
+	protected void doClockCard(int cid, int card) {
+		if (getPlayer(cid).clockCard(card) >= 7) {
+			if (cid == PL_A) levelUpA = true;
+			else if (cid == PL_B) levelUpB = true;
+		}
+		sendMove(cid, MT_CLOCK, card);
+	}
+
+	protected void sendDamageCards(int cid, ArrayList<Integer> cards) {
+		if (!cards.isEmpty()) {
+			int[] damage = new int[cards.size()];
+			for (int i=0;i<cards.size();i++) {
+				damage[i] = cards.get(i);
+				if (getPlayer(cid).damageCard(damage[i]) >= 7) {
+					if (cid == PL_A) levelUpA = true;
+					else if (cid == PL_B) levelUpB = true;
+				}
+			}
+			sendMove(cid, MT_DAMAGE, damage);
+			cards.clear();
+		}
+	}
+	protected void sendCancelDamageCards(int cid, ArrayList<Integer> cards) {
+		if (!cards.isEmpty()) {
+			int[] damage = new int[cards.size()];
+			for (int i=0;i<cards.size();i++) damage[i] = cards.get(i);
+			sendMove(cid, MT_CANCELDAMAGE, damage);
+			cards.clear();
+		}
+	}
+	protected void doAttackCard(int cid, int type, int stage) {
+		Player player = getPlayer(cid);
+		Player opponent = getPlayer((cid == PL_A)?PL_B:PL_A);
+		CardData attacker = player.getStageCardData(stage);
+
+		int trigger = player.triggerCard();
+		if (player.isDeckEmpty()) {
+			doReshuffleDeck(cid);
+			doReshuffleCost(cid);
+		}
+		int triggersoul = 0;	// TODO
+		int damage = attacker.soul + triggersoul;
+		sendMove(cid, MT_ATTACK, type, stage);
+		sendMove(cid, MT_TRIGGER, trigger);
+
+		if (type == 0) {
+			damage += 1;
+		} else if (type == 2) {
+			CardData defender = opponent.getStageCardData(2-stage);
+			damage -= defender.level;
+		}
+
+		boolean cancel = false;
+		ArrayList<Integer> cards = new ArrayList<Integer>();
+		for (int i=0;i<damage;i++) {
+			int drawn = opponent.takeCard();
+			cards.add(drawn);
+			if (opponent.isDeckEmpty()) {
+				cards.add(NO_CARD);
+				doReshuffleDeck((cid == PL_A)?PL_B:PL_A);
+			}
+			if (opponent.getCardData(drawn).type == 1) {
+				cancel = true;
+				break;
+			}
+		}
+		if (cancel) sendCancelDamageCards((cid == PL_A)?PL_B:PL_A, cards);
+		else sendDamageCards((cid == PL_A)?PL_B:PL_A, cards);
+		doReshuffleCost((cid == PL_A)?PL_B:PL_A);
+
+		if (type == 1) {
+			CardData defender = opponent.getStageCardData(2-stage);
+			if (attacker.power > defender.power) {
+				sendMove((cid == PL_A)?PL_B:PL_A, MT_REVERSE, (2-stage));
+			} else if (attacker.power < defender.power) {
+				sendMove(cid, MT_REVERSE, stage);
+			} else {
+				sendMove((cid == PL_A)?PL_B:PL_A, MT_REVERSE, (2-stage));
+				sendMove(cid, MT_REVERSE, stage);
+			}
+		}
+	}
+
+	protected void doLevelUp(int cid, int card) {
+		levelUp = PL_NONE;
+		getPlayer(cid).levelUp(card);
+		sendMove(cid, MT_LEVELUP, card);
 	}
 
 	public void processMessage(int cid, String[] tkns) {
@@ -83,18 +209,11 @@ public abstract class GameServer extends GameSystem {
 					setState(GS_FIRSTDRAW);
 					doDrawCards(PL_A, 5);
 					doDrawCards(PL_B, 5);
-					sendToAllClients("MOVE 0 2 5");
-					sendToAllClients("MOVE 1 2 5");
 				}
 			}
 		} else if (isState(GS_FIRSTDRAW)) {
 			if (tkns[0].contentEquals("DO")) {
 				int type = Utility.parseInt(tkns[1]);
-
-				// TODO
-				String m = "MOVE " + cid + " " + type;
-				for (int i=2;i<tkns.length;i++) m += " " + Utility.parseInt(tkns[i]);
-				sendToAllClients(m);
 
 				if (type == MT_ENDTURN) {
 					if (cid == PL_A) readyA = true;
@@ -108,7 +227,7 @@ public abstract class GameServer extends GameSystem {
 				} else if (type == MT_DRAW) {
 					doDrawCards(cid, Utility.parseInt(tkns[2]));
 				} else if (type == MT_DISCARD) {
-					getPlayer(cid).discardCard(Utility.parseInt(tkns[2]));
+					doDiscardCard(cid, Utility.parseInt(tkns[2]));
 				}
 			}
 		} else if (isState(GS_GAME)) {
@@ -118,25 +237,46 @@ public abstract class GameServer extends GameSystem {
 				int type = Utility.parseInt(tkns[1]);
 
 				if (cid == playerTurn) {
-					// TODO
-					String m = "MOVE " + cid + " " + type;
-					for (int i=2;i<tkns.length;i++) m += " " + Utility.parseInt(tkns[i]);
-					sendToAllClients(m);
-
 					if (type == MT_ENDTURN) {
 						doChangeTurn();
 					} else if (type == MT_DRAW) {
 						doDrawCards(cid, Utility.parseInt(tkns[2]));
 					} else if (type == MT_DISCARD) {
-						getPlayer(cid).discardCard(Utility.parseInt(tkns[2]));
+						doDiscardCard(cid, Utility.parseInt(tkns[2]));
 					} else if (type == MT_PLACE) {
-						getPlayer(cid).placeCard(Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
+						doPlaceCard(cid, Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
 					} else if (type == MT_SWAP) {
-						getPlayer(cid).moveCard(Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
+						doSwapCard(cid, Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
 					} else if (type == MT_CLOCK) {
-						getPlayer(cid).clockCard(Utility.parseInt(tkns[2]));
+						doClockCard(cid, Utility.parseInt(tkns[2]));
 					} else if (type == MT_ATTACK) {
-						doAttack(cid, Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
+						doAttackCard(cid, Utility.parseInt(tkns[2]), Utility.parseInt(tkns[3]));
+					}
+				}
+
+				if (levelUp == PL_NONE) {
+					if (levelUpA) {
+						if (getPlayer(PL_A).getLevel() < 3) {
+							levelUpA = false;
+							levelUp = PL_A;
+							sendToAllClients("NOTIFYLEVELUP " + levelUp);
+						} else {
+							setState(GS_END);
+							sendToAllClients("WINNER " + PL_B);
+						}
+					} else if (levelUpB) {
+						if (getPlayer(PL_A).getLevel() < 3) {
+							levelUpB = false;
+							levelUp = PL_B;
+							sendToAllClients("NOTIFYLEVELUP " + levelUp);
+						} else {
+							setState(GS_END);
+							sendToAllClients("WINNER " + PL_A);
+						}
+					}
+				} else {
+					if (cid == levelUp && type == MT_LEVELUP) {
+						doLevelUp(cid, Utility.parseInt(tkns[2]));
 					}
 				}
 			}
@@ -188,13 +328,13 @@ public abstract class GameServer extends GameSystem {
 		}
 	}
 
-	protected PlayerServer getPlayer(int cid) {
+	protected Player getPlayer(int cid) {
 		if (cid == PL_A) return playerA;
 		else if (cid == PL_B) return playerB;
 		return null;
 	}
-	protected PlayerServer getPlayerInTurn() {return getPlayer(playerTurn);}
-	protected PlayerServer getPlayerInWait() {return getPlayer((playerTurn == PL_A)?PL_B:PL_A);}
+	protected Player getPlayerInTurn() {return getPlayer(playerTurn);}
+	protected Player getPlayerInWait() {return getPlayer((playerTurn == PL_A)?PL_B:PL_A);}
 
 	@Override
 	protected void setState(int state) {
