@@ -2,7 +2,7 @@
 
 font {
 	name=defont;
-	bitmap=res/font/defont.png;
+	bitmap=res/fnt/defont.png;
 	tiles: x=16 y=16;
 	offset: x=4 y=8;
 	default: w=20 h=32;

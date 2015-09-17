@@ -6,10 +6,10 @@ import zan.lib.gfx.shader.DefaultShader;
 import zan.lib.gfx.texture.TextureManager;
 import zan.lib.gfx.text.TextManager;
 import zan.lib.gfx.view.ViewPort2D;
+import zan.lib.input.InputManager;
 import zan.lib.net.NetworkManager;
 import zan.lib.core.BasePanel;
 import static zan.lib.input.InputManager.*;
-
 import zan.wscard.card.CardData;
 import zan.wscard.card.CardReader;
 import zan.wscard.core.GameCore;
@@ -19,6 +19,8 @@ import zan.wscard.sys.NetworkGameServer;
 import zan.wscard.sys.PlayerInfo;
 
 public class GamePanel extends BasePanel {
+
+	private GameCore gameCore;
 
 	private DefaultShader shaderProgram;
 	private ViewPort2D viewPort;
@@ -33,6 +35,7 @@ public class GamePanel extends BasePanel {
 	private String address;
 
 	public GamePanel(GameCore core, int mode, String address) {
+		gameCore = core;
 		shaderProgram = new DefaultShader();
 		viewPort = new ViewPort2D(0, 0, core.getScreenWidth(), core.getScreenHeight());
 		this.mode = mode;
@@ -48,10 +51,6 @@ public class GamePanel extends BasePanel {
 		viewPort.setHeightInterval(600.0);
 		viewPort.showView();
 		viewPort.projectView(shaderProgram);
-
-		TextureManager.init();
-		TextManager.init();
-		TextManager.loadFontFile("res/font/fonts.res");
 
 		// Card data / image
 		CardReader cr = new CardReader();
@@ -119,7 +118,10 @@ public class GamePanel extends BasePanel {
 
 	@Override
 	public void update(double time) {
-		gameGUI.updateMousePos(viewPort.getScreenToVirtualX(getMouseX()), viewPort.getScreenToVirtualY(getMouseY()));
+		if (InputManager.isKeyReleased(InputManager.IM_KEY_ESCAPE)) gameCore.close();
+		else if (InputManager.isKeyReleased(InputManager.IM_KEY_F11)) gameCore.toggleFullScreen();
+
+		gameGUI.updateMousePos(viewPort.getScreenToVirtualX(getMouseX()), viewPort.getScreenToVirtualY(gameCore.getScreenHeight()-getMouseY()));
 		gameGUI.doUserInterface();
 		gameGUI.doActionEvents();
 		gameGUI.update();

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import zan.lib.gfx.shader.DefaultShader;
 import zan.lib.gfx.text.TextManager;
-import zan.lib.gfx.texture.TextureManager;
 import zan.lib.gfx.view.ViewPort2D;
 import zan.lib.input.InputManager;
 import zan.lib.core.BasePanel;
@@ -35,16 +34,11 @@ public class TestPanel extends BasePanel {
 		viewPort.setHeightInterval(600.0);
 		viewPort.showView();
 		viewPort.projectView(shaderProgram);
-
-		TextureManager.init();
-		TextManager.init();
-		TextManager.loadFontFile("res/font/fonts.res");
 	}
 
 	@Override
 	public void destroy() {
-		TextureManager.destroy();
-		TextManager.destroy();
+
 	}
 
 	@Override
@@ -56,6 +50,9 @@ public class TestPanel extends BasePanel {
 
 	@Override
 	public void update(double time) {
+		if (InputManager.isKeyReleased(InputManager.IM_KEY_ESCAPE)) gameCore.close();
+		else if (InputManager.isKeyReleased(InputManager.IM_KEY_F11)) gameCore.toggleFullScreen();
+
 		if (mode == 0) {
 			if (InputManager.isKeyPressed(InputManager.IM_KEY_S)) mode = 1;
 			else if (InputManager.isKeyPressed(InputManager.IM_KEY_C)) {

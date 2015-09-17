@@ -1,23 +1,29 @@
 package zan.wscard.core;
 
-import static zan.lib.input.InputManager.IM_KEY_ESCAPE;
-import static zan.lib.input.InputManager.IM_KEY_F11;
-import static zan.lib.input.InputManager.IM_RELEASE;
 import zan.lib.core.CoreEngine;
+import zan.lib.gfx.text.TextManager;
+import zan.lib.gfx.texture.TextureManager;
 import zan.wscard.panel.TestPanel;
 
 public class GameCore extends CoreEngine {
 
 	@Override
-	protected void onKey(int key, int state, int mods, int scancode) {
-		if (key == IM_KEY_ESCAPE && state == IM_RELEASE) close();
-		else if (key == IM_KEY_F11 && state == IM_RELEASE) toggleFullScreen();
-		super.onKey(key, state, mods, scancode);
+	protected void onInit() {
+		TextureManager.init();
+		TextManager.init();
+		TextManager.loadFontFile("res/fnt/fonts.res");
+	}
+
+	@Override
+	protected void onDestroy() {
+		TextureManager.destroy();
+		TextManager.destroy();
 	}
 
 	public static void main(String[] args) {
 		GameCore core = new GameCore();
 		core.setTitle("Weiss-Schwarz Simulator");
+		core.setIcon("res/ico/wscard_icon.png");
 		core.setScreenSize(800, 600);
 		core.setPanel(new TestPanel(core));
 		core.run();
