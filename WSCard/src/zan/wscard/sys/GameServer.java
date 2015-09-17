@@ -184,10 +184,14 @@ public abstract class GameServer extends GameSystem {
 		if (type == 1) {
 			CardData defender = opponent.getStageCardData(2-stage);
 			if (attacker.power > defender.power) {
+				opponent.discardStageCard(2-stage);
 				sendMove((cid == PL_A)?PL_B:PL_A, MT_REVERSE, (2-stage));
 			} else if (attacker.power < defender.power) {
+				player.discardStageCard(stage);
 				sendMove(cid, MT_REVERSE, stage);
 			} else {
+				opponent.discardStageCard(2-stage);
+				player.discardStageCard(stage);
 				sendMove((cid == PL_A)?PL_B:PL_A, MT_REVERSE, (2-stage));
 				sendMove(cid, MT_REVERSE, stage);
 			}

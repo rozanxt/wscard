@@ -71,6 +71,15 @@ public class Player {
 		return false;
 	}
 
+	public boolean discardStageCard(int stage) {
+		if (playerStages[stage] != -1) {
+			playerWaitingRoom.add(playerStages[stage]);
+			playerStages[stage] = -1;
+			return true;
+		}
+		return false;
+	}
+
 	public boolean placeCard(int card, int stage) {
 		for (int i=0;i<playerHand.size();i++) {
 			if (playerHand.get(i) == card) {
