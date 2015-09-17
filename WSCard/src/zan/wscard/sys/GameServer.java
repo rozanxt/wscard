@@ -148,7 +148,7 @@ public abstract class GameServer extends GameSystem {
 		if (player.isDeckEmpty()) {
 			doReshuffleDeck(cid);
 			// TODO send reshuffle
-			sendToClient(cid, "DRAW -1");
+			sendMove(cid, MT_DRAW, NO_CARD);
 			doReshuffleCost(cid);
 		}
 		int triggersoul = 0;	// TODO
