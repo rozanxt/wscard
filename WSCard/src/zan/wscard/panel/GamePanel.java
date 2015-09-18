@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import zan.lib.gfx.shader.DefaultShader;
 import zan.lib.gfx.texture.TextureManager;
-import zan.lib.gfx.text.TextManager;
 import zan.lib.gfx.view.ViewPort2D;
 import zan.lib.input.InputManager;
 import zan.lib.net.NetworkManager;
