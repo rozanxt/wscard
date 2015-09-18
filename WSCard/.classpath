@@ -8,10 +8,10 @@
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="WSCard/lib/lwjgl/native"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/zanlib/zanlib-0.4.0.jar" sourcepath="/ZanLibrary/src"/>
 	<classpathentry kind="lib" path="lib/audio/SoundSystem/SoundSystem.jar"/>
 	<classpathentry kind="lib" path="lib/audio/LibraryLWJGLOpenAL/LibraryLWJGL3OpenAL.jar"/>
 	<classpathentry kind="lib" path="lib/audio/CodecWav/CodecWav.jar"/>
 	<classpathentry kind="lib" path="lib/audio/CodecJOrbis/CodecJOrbis.jar"/>
+	<classpathentry kind="lib" path="lib/zanlib/zanlib-0.4.0a.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
