@@ -19,12 +19,10 @@ public abstract class GameSystem {
 	public static final int REQ_NONE = 0;
 	public static final int REQ_DRAW = 1;
 	public static final int REQ_DEALDAMAGE = 2;
-	public static final int REQ_LEVELUP = 3;
 
 	public static final int ANS_NONE = 0;
 	public static final int ANS_DRAW = 1;
 	public static final int ANS_DEALDAMAGE = 2;
-	public static final int ANS_LEVELUP = 3;
 
 	public static final int ACT_NONE = 0;
 	public static final int ACT_ENDTURN = 1;
@@ -54,7 +52,6 @@ public abstract class GameSystem {
 	public static final int GP_MAIN = 4;
 	public static final int GP_ATTACK = 5;
 	public static final int GP_END = 6;
-	public static final int GP_LEVELUP = 7;
 
 	public static final int PL_NONE = -1;
 	public static final int PL_A = 0;
@@ -90,6 +87,10 @@ public abstract class GameSystem {
 	protected int gameState = GS_INIT;
 	protected int gamePhase = GP_WAIT;
 	protected int playerTurn = PL_NONE;
+
+	protected void setState(int state) {gameState = state;}
+	protected void setPhase(int phase) {gamePhase = phase;}
+	protected void setTurn(int turn) {playerTurn = turn;}
 
 	public boolean isState(int state) {return (gameState == state);}
 	public boolean isPhase(int phase) {return (gamePhase == phase);}

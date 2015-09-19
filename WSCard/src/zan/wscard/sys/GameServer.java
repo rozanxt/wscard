@@ -30,19 +30,19 @@ public abstract class GameServer extends GameSystem {
 		playerB.setInfo(infoB);
 	}
 
-	private void setState(int state) {
-		gameState = state;
+	private void sendState(int state) {
+		setState(state);
 		sendToAllClients(MSG_STATE, gameState);
 	}
-	private void setPhase(int phase) {
-		gamePhase = phase;
+	private void sendPhase(int phase) {
+		setPhase(phase);
 		sendToAllClients(MSG_PHASE, gamePhase);
 	}
 
 	private void doChangeTurn() {
-		if (playerTurn == PL_A) playerTurn = PL_B;
-		else if (playerTurn == PL_B) playerTurn = PL_A;
-		else playerTurn = PL_A;	// TODO Randomize first turn
+		if (isTurn(PL_A)) setTurn(PL_B);
+		else if (isTurn(PL_B)) setTurn(PL_A);
+		else setTurn(PL_A);	// TODO Randomize first turn
 		sendToAllClients(MSG_TURN, playerTurn);
 	}
 
@@ -61,69 +61,78 @@ public abstract class GameServer extends GameSystem {
 	}
 
 	private void doDealDamage(int cid, int num) {
-		Player defender = getPlayer((cid == PL_A)?PL_B:PL_A);
+		Player opponent = getOtherPlayer(cid);
 		ArrayList<Integer> cards = new ArrayList<Integer>();
 		for (int i=0;i<num;i++) {
-			int drawn = defender.drawCard();
+			int drawn = opponent.drawCard();
 			cards.add(drawn);
 			if (drawn == NO_CARD) {
-				defender.reshuffleDeck();
-				drawn = defender.drawCard();
+				opponent.reshuffleDeck();
+				drawn = opponent.drawCard();
 				cards.add(drawn);
 			}
-			if (defender.getCardData(drawn).type == CARD_CLIMAX) break;
+			if (opponent.getCardData(drawn).type == CARD_CLIMAX) break;
 		}
 		sendArrayListToClient(cid, MSG_ANSWER, ANS_DEALDAMAGE, cards);
 	}
 
-	private void doInformAction(int cid, int[] actions) {
+	private void doInformAction(int cid, int type, int[] actions) {
 		Player player = getPlayer(cid);
+		Player opponent = getOtherPlayer(cid);
 
-		if (actions[0] == ACT_ENDTURN) {
+		if (type == ACT_STANDUP) {
+			// TODO Player card state CS_STAND
+		} else if (type == ACT_DRAWTOHAND) {
+			for (int i=0;i<actions.length;i++) {
+				if (actions[i] != CARD_NONE) {
+					player.addToHand(actions[i]);
+					actions[i] = 0;
+				}
+			}
+		} else if (type == ACT_DISCARDFROMHAND) {
+			player.removeFromHand(actions[0]);
+			player.addToWaitingRoom(actions[0]);
+		} else if (type == ACT_CLOCKFROMHAND) {
+			player.removeFromHand(actions[0]);
+			player.addToClock(actions[0]);
+		} else if (type == ACT_PLACEFROMHAND) {
+			player.removeFromHand(actions[0]);
+			player.placeOnStage(actions[0], actions[1]);
+		} else if (type == ACT_SWAPONSTAGE) {
+			player.swapOnStage(actions[0], actions[1]);
+		} else if (type == ACT_ATTACK_DECLARATION) {
+			// TODO Player card state CS_REST
+		} else if (type == ACT_ATTACK_TRIGGER) {
+			player.addToStock(actions[0]);
+		} else if (type == ACT_ATTACK_DAMAGE) {
+			for (int i=0;i<actions.length;i++) {
+				if (actions[i] != CARD_NONE) opponent.addToClock(actions[i]);
+			}
+		} else if (type == ACT_CLEANUP) {
+			// TODO Player card state CS_REVERSE to Waiting Room
+		}
+
+		StringBuilder m = new StringBuilder().append(MSG_INFO).append(" ").append(cid).append(" ").append(type);
+		for (int i=0;i<actions.length;i++) m.append(" ").append(actions[i]);
+		sendToAllClients(m.toString());
+
+		if (type == ACT_ENDTURN) {
 			if (isState(GS_FIRSTDRAW)) {
 				ready[cid] = true;
 				if (ready[PL_A] && ready[PL_B]) {
 					ready[PL_A] = false;
 					ready[PL_B] = false;
-					setState(GS_GAME);
+					sendState(GS_GAME);
 					doChangeTurn();
 				}
 			} else if (isState(GS_GAME)) {
-				doChangeTurn();
+				if (isTurn(cid)) doChangeTurn();
 			}
-		} else if (actions[0] == ACT_STANDUP) {
-
-		} else if (actions[0] == ACT_DRAWTOHAND) {
-			for (int i=1;i<actions.length;i++) {
-				player.addToHand(actions[i]);
-				if (actions[i] != CARD_NONE) actions[i] = 0;
-			}
-		} else if (actions[0] == ACT_DISCARDFROMHAND) {
-			player.removeFromHand(actions[1]);
-			player.addToWaitingRoom(actions[1]);
-		} else if (actions[0] == ACT_CLOCKFROMHAND) {
-			player.removeFromHand(actions[1]);
-			player.addToClock(actions[1]);
-		} else if (actions[0] == ACT_PLACEFROMHAND) {
-			player.removeFromHand(actions[1]);
-			player.placeOnStage(actions[1], actions[2]);
-		} else if (actions[0] == ACT_SWAPONSTAGE) {
-			player.swapOnStage(actions[1], actions[2]);
-		} else if (actions[0] == ACT_ATTACK_DECLARATION) {
-
-		} else if (actions[0] == ACT_ATTACK_TRIGGER) {
-
-		} else if (actions[0] == ACT_ATTACK_DAMAGE) {
-
 		}
-
-		sendArrayToAllClients(MSG_INFO, cid, actions);
 	}
 
 	private void processMessage(int cid, int[] tkns) {
-		if (tkns[0] == MSG_PING) {
-			sendToClient(cid, MSG_PONG);
-		}
+		if (tkns[0] == MSG_PING) sendToClient(cid, MSG_PONG);
 
 		if (isState(GS_INIT)) {
 			if (tkns[0] == MSG_READY) {
@@ -131,27 +140,26 @@ public abstract class GameServer extends GameSystem {
 				if (ready[PL_A] && ready[PL_B]) {
 					ready[PL_A] = false;
 					ready[PL_B] = false;
-					setState(GS_FIRSTDRAW);
+					sendState(GS_FIRSTDRAW);
 				}
 			}
 		} else if (isState(GS_FIRSTDRAW)) {
 			if (tkns[0] == MSG_REQUEST) {
 				if (tkns[1] == REQ_DRAW) doDrawCards(cid, tkns[2]);
 			} else if (tkns[0] == MSG_ACTION) {
-				doInformAction(cid, Arrays.copyOfRange(tkns, 1, tkns.length));
+				doInformAction(cid, tkns[1], Arrays.copyOfRange(tkns, 2, tkns.length));
 			}
 		} else if (isState(GS_GAME)) {
-			if (tkns[0] == MSG_REQUEST) {
-				if (tkns[1] == REQ_DRAW) {
-					doDrawCards(cid, tkns[2]);
-				} else if (tkns[1] == REQ_DEALDAMAGE) {
-					doDealDamage(cid, tkns[2]);
-				}
+			if (tkns[0] == MSG_PHASE) {
+				if (isTurn(cid)) sendPhase(tkns[1]);	// TODO (!)
+			} else if (tkns[0] == MSG_REQUEST) {
+				if (tkns[1] == REQ_DRAW) doDrawCards(cid, tkns[2]);
+				else if (tkns[1] == REQ_DEALDAMAGE) doDealDamage(cid, tkns[2]);
 			} else if (tkns[0] == MSG_ACTION) {
-				doInformAction(cid, Arrays.copyOfRange(tkns, 1, tkns.length));
+				doInformAction(cid, tkns[1], Arrays.copyOfRange(tkns, 2, tkns.length));
 			}
 		} else if (isState(GS_END)) {
-
+			// TODO
 		}
 	}
 
@@ -191,6 +199,9 @@ public abstract class GameServer extends GameSystem {
 		if (cid == PL_A) return playerA;
 		else if (cid == PL_B) return playerB;
 		return null;
+	}
+	public Player getOtherPlayer(int cid) {
+		return getPlayer((cid == PL_A)?PL_B:PL_A);
 	}
 
 	private void sendArrayListToClient(int cid, int msg, int type, ArrayList<Integer> data) {

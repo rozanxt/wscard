@@ -160,7 +160,7 @@ public class GameGUI {
 			if (heldCard == null) {
 				if (isKeyPressed(IM_KEY_SPACE)) {
 					// Skips clocking
-					gameClient.setPhase(GP_MAIN);
+					gameClient.sendPhase(GP_MAIN);
 				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
 					checkDragFromHand();
 				}
@@ -189,7 +189,7 @@ public class GameGUI {
 					// Ends main phase
 					for (int i=0;i<playerStages.length;i++) if (playerStages[i].getCard() != null) playerStages[i].getCard().setCardState(1);
 					gameClient.submitActions(playerActions);
-					gameClient.setPhase(GP_ATTACK);
+					gameClient.sendPhase(GP_ATTACK);
 				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
 					checkDragFromHand();
 					checkDragFromStage();
@@ -287,7 +287,7 @@ public class GameGUI {
 			if (isKeyPressed(IM_KEY_SPACE)) {
 				// Ends attack phase
 				selectedCard = null;
-				gameClient.setPhase(GP_END);
+				gameClient.sendPhase(GP_END);
 			}
 		}
 	}
@@ -296,10 +296,6 @@ public class GameGUI {
 		if (gameClient.isSubPhase(SP_START)) {
 			gameClient.actCleanUp();
 		}
-	}
-
-	private void onLevelUp() {
-
 	}
 
 	public void doUserInterface() {
@@ -326,9 +322,6 @@ public class GameGUI {
 				} else if (gameClient.isPhase(GP_END)) {
 					onEndPhase();
 				}
-			}
-			if (gameClient.isPhase(GP_LEVELUP)) {
-				onLevelUp();
 			}
 		} else if (gameClient.isState(GS_END)) {
 			onEnd();
@@ -386,16 +379,20 @@ public class GameGUI {
 	// Action Events
 
 	private void doActionEvent(String[] tkns) {	// TODO TRIGGER, RESHUFFLE
-		if (tkns[0].contentEquals("NEXTPHASE")) {
-			//gameClient.nextPhase();
-			actionDelay = 50;
+		if (tkns[0].contentEquals("WAIT")) {
+			int wait = Utility.parseInt(tkns[1]);
+			actionDelay = wait;
+		} else if (tkns[0].contentEquals("PHASE")) {
+			int phase = Utility.parseInt(tkns[1]);
+			gameClient.sendPhase(phase);
+		} else if (tkns[0].contentEquals("ENDTURN")) {
+			gameClient.sendToServer(MSG_ACTION, ACT_ENDTURN);
 		} else if (tkns[0].contentEquals("STANDUP")) {
 			for (int i=0;i<playerStages.length;i++) {
 				if (playerStages[i].hasCard()) {
 					playerStages[i].getCard().setCardState(CS_STAND);
 				}
 			}
-			actionDelay = 0;
 		} else if (tkns[0].contentEquals("DRAW")) {
 			int id = Utility.parseInt(tkns[1]);
 			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
@@ -443,7 +440,7 @@ public class GameGUI {
 					}
 				}
 			}
-			actionDelay = 50;
+			actionDelay = 30;
 		} else if (tkns[0].contentEquals("OPSTANDUP")) {
 			for (int i=0;i<opponentStages.length;i++) {
 				if (opponentStages[i].hasCard()) {
@@ -534,7 +531,7 @@ public class GameGUI {
 					}
 				}
 			}
-			actionDelay = 50;
+			actionDelay = 30;
 		} else if (tkns[0].contentEquals("OPLEVELUP")) {
 			int id = Utility.parseInt(tkns[1]);
 			for (int i=0;i<7;i++) {
@@ -692,7 +689,6 @@ public class GameGUI {
 			else if (gameClient.isPhase(GP_MAIN)) TextManager.renderText(sp, "Main Phase", "defont");
 			else if (gameClient.isPhase(GP_ATTACK)) TextManager.renderText(sp, "Attack Phase", "defont");
 			else if (gameClient.isPhase(GP_END)) TextManager.renderText(sp, "End Phase", "defont");
-			else if (gameClient.isPhase(GP_LEVELUP)) TextManager.renderText(sp, "Level Up!", "defont");
 			sp.popMatrix();
 		} else if (gameClient.isState(GS_END) && winner != PL_NONE) {
 			sp.pushMatrix();

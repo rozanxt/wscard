@@ -1,16 +1,5 @@
 package zan.wscard.sys;
 
-import static zan.wscard.sys.GameSystem.ACT_ATTACK_DECLARATION;
-import static zan.wscard.sys.GameSystem.ACT_ENDTURN;
-import static zan.wscard.sys.GameSystem.ACT_STANDUP;
-import static zan.wscard.sys.GameSystem.GP_DRAW;
-import static zan.wscard.sys.GameSystem.GP_WAIT;
-import static zan.wscard.sys.GameSystem.MSG_ACTION;
-import static zan.wscard.sys.GameSystem.MSG_REQUEST;
-import static zan.wscard.sys.GameSystem.REQ_DRAW;
-import static zan.wscard.sys.GameSystem.SP_ATTACK_TRIGGER;
-import static zan.wscard.sys.GameSystem.SP_END;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -38,15 +27,85 @@ public abstract class GameClient extends GameSystem {
 		opponent.setInfo(infoOpponent);
 	}
 
-	public void setSubPhase(int phase) {subPhase = phase;}
+	public void actStandUp() {
+		syncAction(ACT_STANDUP);
+		sendToServer(MSG_ACTION, ACT_STANDUP);
+		setSubPhase(SP_END);
+	}
 
-	public void syncAction(int type, int[] actions) {
+	public void actDraw() {
+		sendToServer(MSG_REQUEST, REQ_DRAW, 1);
+		setSubPhase(SP_END);
+	}
+
+	public void actCleanUp() {
+		syncAction(ACT_CLEANUP);
+		sendToServer(MSG_ACTION, ACT_CLEANUP);
+		setSubPhase(SP_END);
+	}
+
+	public void submitActions(ArrayList<PlayerAction> actions) {
+		for (int i=0;i<actions.size();i++) {
+			syncAction(actions.get(i).type, actions.get(i).actions);
+			sendArrayToServer(MSG_ACTION, actions.get(i).type, actions.get(i).actions);
+		}
+		actions.clear();
+	}
+
+	public void submitAttack(int type, int stage) {
+		syncAction(ACT_ATTACK_DECLARATION, type, stage);
+		sendToServer(MSG_ACTION, ACT_ATTACK_DECLARATION, type, stage);
+		sendToServer(MSG_REQUEST, REQ_DRAW, 1);
+		setSubPhase(SP_ATTACK_TRIGGER);
+	}
+
+	public void sendPhase(int phase) {
+		syncPhase(phase);
+		sendToServer(MSG_PHASE, gamePhase);
+	}
+	public void setSubPhase(int phase) {
+		subPhase = phase;
+	}
+	private void syncState(int state) {
+		if (!isState(state)) {
+			setState(state);
+
+			if (isState(GS_FIRSTDRAW)) {
+				setSubPhase(SP_START);
+			}
+		}
+	}
+	private void syncPhase(int phase) {
+		if (!isPhase(phase)) {
+			setPhase(phase);
+
+			if (isInTurn()) {
+				setSubPhase(SP_START);
+			}
+		}
+	}
+	private void syncTurn(int turn) {
+		if (!isTurn(turn)) {
+			setTurn(turn);
+
+			if (isInTurn()) {
+				sendPhase(GP_STANDUP);
+			}
+		}
+	}
+
+	private void syncAction(int type, int... actions) {
 		if (type == ACT_STANDUP) {
-
+			// TODO Player card state CS_STAND
+			actionStack.add("WAIT 50");
+			actionStack.add("STANDUP");
+			actionStack.add("PHASE " + GP_DRAW);
 		} else if (type == ACT_DRAWTOHAND) {
-			for (int i=1;i<actions.length;i++) {
-				player.addToHand(actions[i]);
-				if (actions[i] != CARD_NONE) actions[i] = 0;
+			for (int i=0;i<actions.length;i++) {
+				if (actions[i] != CARD_NONE) {
+					player.addToHand(actions[i]);
+					actions[i] = 0;
+				}
 			}
 		} else if (type == ACT_DISCARDFROMHAND) {
 			player.removeFromHand(actions[0]);
@@ -60,74 +119,25 @@ public abstract class GameClient extends GameSystem {
 		} else if (type == ACT_SWAPONSTAGE) {
 			player.swapOnStage(actions[0], actions[1]);
 		} else if (type == ACT_ATTACK_DECLARATION) {
-
+			// TODO Player card state CS_REST
+			attackInfo.clear();
+			attackInfo.setAttack(player, opponent);
+			attackInfo.setType(actions[0]);
+			attackInfo.setStage(actions[1]);
 		} else if (type == ACT_ATTACK_TRIGGER) {
-
+			player.addToStock(actions[0]);
 		} else if (type == ACT_ATTACK_DAMAGE) {
-
+			for (int i=0;i<actions.length;i++) {
+				if (actions[i] != CARD_NONE) opponent.addToClock(actions[i]);
+			}
+		} else if (type == ACT_CLEANUP) {
+			// TODO Player card state CS_REVERSE to Waiting Room
+			actionStack.add("OPCLEANUP");
+			actionStack.add("CLEANUP");
+			actionStack.add("ENDTURN");
 		}
 	}
 
-	public void actStandUp() {
-		actionStack.add("STANDUP");
-		sendToServer(MSG_ACTION, ACT_STANDUP);
-		setPhase(GP_DRAW);
-	}
-
-	public void actDraw() {
-		sendToServer(MSG_REQUEST, REQ_DRAW, 1);
-		setSubPhase(SP_END);
-	}
-
-	public void actCleanUp() {
-		actionStack.add("OPCLEANUP");
-		actionStack.add("CLEANUP");
-		sendToServer(MSG_ACTION, ACT_CLEANUP);
-		sendToServer(MSG_ACTION, ACT_ENDTURN);
-		setPhase(GP_WAIT);
-	}
-
-	public void submitActions(ArrayList<PlayerAction> actions) {
-		for (int i=0;i<actions.size();i++) {
-			syncAction(actions.get(i).type, actions.get(i).actions);
-			sendArrayToServer(MSG_ACTION, actions.get(i).type, actions.get(i).actions);
-		}
-		actions.clear();
-	}
-
-	public void submitAttack(int type, int stage) {
-		attackInfo.clear();
-		attackInfo.setAttack(player, opponent);
-		attackInfo.setType(type);
-		attackInfo.setStage(stage);
-		sendToServer(MSG_ACTION, ACT_ATTACK_DECLARATION, type, stage);
-		sendToServer(MSG_REQUEST, REQ_DRAW, 1);
-		setSubPhase(SP_ATTACK_TRIGGER);
-	}
-
-	private void setState(int state) {
-		gameState = state;
-
-		if (isState(GS_FIRSTDRAW)) {
-			setSubPhase(SP_START);
-		}
-	}
-	public void setPhase(int phase) {
-		gamePhase = phase;
-
-		if (isInTurn()) {
-			sendToServer(MSG_PHASE, gamePhase);
-			setSubPhase(SP_START);
-		}
-	}
-	private void setTurn(int turn) {
-		playerTurn = turn;
-
-		if (isInTurn()) {
-			setPhase(GP_STANDUP);
-			setSubPhase(SP_START);
-		}
-	}
 
 	private void doDrawToHand(int[] cards) {
 		for (int i=0;i<cards.length;i++) {
@@ -272,11 +282,11 @@ public abstract class GameClient extends GameSystem {
 		if (tkns[0] == MSG_PING) {
 			sendToServer(MSG_PONG);
 		} else if (tkns[0] == MSG_STATE) {
-			setState(tkns[1]);
+			syncState(tkns[1]);
 		} else if (tkns[0] == MSG_PHASE) {
-			setPhase(tkns[1]);
+			syncPhase(tkns[1]);
 		} else if (tkns[0] == MSG_TURN) {
-			setTurn(tkns[1]);
+			syncTurn(tkns[1]);
 		} else if (tkns[0] == MSG_ANSWER) {
 			if (tkns[1] == ANS_DRAW) {
 				if (isState(GS_FIRSTDRAW)) {
@@ -285,10 +295,10 @@ public abstract class GameClient extends GameSystem {
 				} else if (isState(GS_GAME)) {
 					if (isPhase(GP_DRAW)) {
 						doDrawToHand(Arrays.copyOfRange(tkns, 2, tkns.length));
-						setPhase(GP_CLOCK);
+						actionStack.add("PHASE " + GP_CLOCK);
 					} else if (isPhase(GP_CLOCK)) {
 						doDrawToHand(Arrays.copyOfRange(tkns, 2, tkns.length));
-						setPhase(GP_MAIN);
+						actionStack.add("PHASE " + GP_MAIN);
 					} else if (isPhase(GP_ATTACK)) {
 						if (isSubPhase(SP_ATTACK_TRIGGER)) {
 							doDrawTrigger(Arrays.copyOfRange(tkns, 2, tkns.length));
