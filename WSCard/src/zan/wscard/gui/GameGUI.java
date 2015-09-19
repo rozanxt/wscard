@@ -249,29 +249,31 @@ public class GameGUI {
 		}
 
 		if (selectedCard != null) {
-			StageField sf = (StageField)selectedCard.getCardField();
-			int sid = sf.getStageID();
-			if (opponentStages[2-sid].hasCard()) {
-				if (isKeyPressed(IM_KEY_1)) {
-					// Submits frontal attack
-					selectedCard.setCardState(2);
-					playerMoves.add(new PlayerMove(MT_ATTACK, 1, sid));
-					submitMoves(playerMoves);
-					selectedCard = null;
-				} else if (isKeyPressed(IM_KEY_2)) {
-					// Submits side attack
-					selectedCard.setCardState(2);
-					playerMoves.add(new PlayerMove(MT_ATTACK, 2, sid));
-					submitMoves(playerMoves);
-					selectedCard = null;
-				}
-			} else {
-				if (isKeyPressed(IM_KEY_0)) {
-					// Submits direct attack
-					selectedCard.setCardState(2);
-					playerMoves.add(new PlayerMove(MT_ATTACK, 0, sid));
-					submitMoves(playerMoves);
-					selectedCard = null;
+			if (selectedCard.getCardField() instanceof StageField) {
+				StageField sf = (StageField)selectedCard.getCardField();
+				int sid = sf.getStageID();
+				if (opponentStages[2-sid].hasCard()) {
+					if (isKeyPressed(IM_KEY_1)) {
+						// Submits frontal attack
+						selectedCard.setCardState(2);
+						playerMoves.add(new PlayerMove(MT_ATTACK, 1, sid));
+						submitMoves(playerMoves);
+						selectedCard = null;
+					} else if (isKeyPressed(IM_KEY_2)) {
+						// Submits side attack
+						selectedCard.setCardState(2);
+						playerMoves.add(new PlayerMove(MT_ATTACK, 2, sid));
+						submitMoves(playerMoves);
+						selectedCard = null;
+					}
+				} else {
+					if (isKeyPressed(IM_KEY_0)) {
+						// Submits direct attack
+						selectedCard.setCardState(2);
+						playerMoves.add(new PlayerMove(MT_ATTACK, 0, sid));
+						submitMoves(playerMoves);
+						selectedCard = null;
+					}
 				}
 			}
 		}

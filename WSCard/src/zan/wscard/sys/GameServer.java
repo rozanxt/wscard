@@ -202,6 +202,7 @@ public abstract class GameServer extends GameSystem {
 		levelUp = PL_NONE;
 		getPlayer(cid).levelUp(card);
 		sendMove(cid, MT_LEVELUP, card);
+		processMessage(cid, new String[]{"DO", "0"});
 	}
 
 	public void processMessage(int cid, String[] tkns) {
