@@ -17,10 +17,9 @@ import zan.wscard.obj.StageField;
 import zan.wscard.obj.StockField;
 import zan.wscard.obj.WaitingRoomField;
 import zan.wscard.sys.GameClient;
-import zan.wscard.sys.PlayerMove;
+import zan.wscard.sys.PlayerAction;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLE_FAN;
 import static zan.wscard.sys.GameSystem.*;
-import static zan.wscard.sys.PlayerMove.*;
 import static zan.wscard.obj.CardObject.*;
 import static zan.lib.input.InputManager.*;
 
@@ -43,7 +42,7 @@ public class GameGUI {
 	private CardObject heldCard = null;
 	private Vec2D heldOffset = new Vec2D(0.0, 0.0);
 
-	private ArrayList<PlayerMove> playerMoves = new ArrayList<PlayerMove>();
+	private ArrayList<PlayerAction> playerActions = new ArrayList<PlayerAction>();
 
 	private VertexObject selected;
 
@@ -103,32 +102,38 @@ public class GameGUI {
 	// User Interface
 
 	private void onInit() {
-		if (isKeyPressed(IM_KEY_SPACE)) gameClient.sendReady();
+		if (isKeyPressed(IM_KEY_SPACE)) {
+			gameClient.sendToServer(MSG_READY);
+		}
 	}
 
 	private void onFirstDraw() {
-		if (heldCard == null) {
-			if (isKeyPressed(IM_KEY_SPACE)) {
-				// Submits first draw
-				playerMoves.add(new PlayerMove(MT_DRAW, playerMoves.size()));
-				playerMoves.add(new PlayerMove(MT_ENDTURN));
-				submitMoves(playerMoves);
-				gameClient.endPhase();
-				return;
-			}
-
-			if (isMousePressed(IM_MOUSE_BUTTON_1)) checkDragFromHand();
-		} else {
-			holdCard();
-			if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
-				if (playerWaitingRoom.isInBound(mouseX, mouseY)) {
-					// Discards a card
-					playerHand.removeCard(heldCard);
-					playerWaitingRoom.addCard(heldCard);
-					activeCards.remove(heldCard);
-					playerMoves.add(new PlayerMove(MT_DISCARD, heldCard.getCardID()));
+		if (gameClient.isSubPhase(SP_START)) {
+			gameClient.sendToServer(MSG_REQUEST, REQ_DRAW, 5);
+			gameClient.setSubPhase(SP_FIRSTDRAW_DISCARD);
+		} else if (gameClient.isSubPhase(SP_FIRSTDRAW_DISCARD)) {
+			if (heldCard == null) {
+				if (isKeyPressed(IM_KEY_SPACE)) {
+					// Submits discarded cards in first draw
+					int redraw = playerActions.size();
+					gameClient.submitActions(playerActions);
+					gameClient.sendToServer(MSG_REQUEST, REQ_DRAW, redraw);
+					gameClient.setSubPhase(SP_END);
+				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
+					checkDragFromHand();
 				}
-				dropCard();
+			} else {
+				holdCard();
+				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
+					if (playerWaitingRoom.isInBound(mouseX, mouseY)) {
+						// Discards a card
+						playerHand.removeCard(heldCard);
+						playerWaitingRoom.addCard(heldCard);
+						activeCards.remove(heldCard);
+						playerActions.add(new PlayerAction(ACT_DISCARDFROMHAND, heldCard.getCardID()));
+					}
+					dropCard();
+				}
 			}
 		}
 	}
@@ -137,178 +142,163 @@ public class GameGUI {
 
 	}
 
-	private void onClockPhase() {
-		if (heldCard == null) {
-			if (isKeyPressed(IM_KEY_SPACE)) {
-				// Skips clocking
-				gameClient.nextPhase();
-				return;
-			}
+	private void onStandUpPhase() {
+		if (gameClient.isSubPhase(SP_START)) {
+			gameClient.actStandUp();
+		}
+	}
 
-			if (isMousePressed(IM_MOUSE_BUTTON_1)) checkDragFromHand();
-		} else {
-			holdCard();
-			if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
-				if (playerClock.isInBound(mouseX, mouseY)) {
-					// Clocks a card
-					playerHand.removeCard(heldCard);
-					playerClock.addCard(heldCard);
-					activeCards.remove(heldCard);
-					playerMoves.add(new PlayerMove(MT_CLOCK, heldCard.getCardID()));
-					playerMoves.add(new PlayerMove(MT_DRAW, 2));
-					submitMoves(playerMoves);
-					gameClient.nextPhase();
+	private void onDrawPhase() {
+		if (gameClient.isSubPhase(SP_START)) {
+			gameClient.actDraw();
+		}
+	}
+
+	private void onClockPhase() {
+		if (gameClient.isSubPhase(SP_START)) {
+			if (heldCard == null) {
+				if (isKeyPressed(IM_KEY_SPACE)) {
+					// Skips clocking
+					gameClient.setPhase(GP_MAIN);
+				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
+					checkDragFromHand();
 				}
-				dropCard();
+			} else {
+				holdCard();
+				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
+					if (playerClock.isInBound(mouseX, mouseY)) {
+						// Clocks a card
+						playerHand.removeCard(heldCard);
+						playerClock.addCard(heldCard);
+						activeCards.remove(heldCard);
+						gameClient.sendToServer(MSG_ACTION, ACT_CLOCKFROMHAND, heldCard.getCardID());
+						gameClient.sendToServer(MSG_REQUEST, REQ_DRAW, 2);
+						gameClient.setSubPhase(SP_END);
+					}
+					dropCard();
+				}
 			}
 		}
 	}
 
 	private void onMainPhase() {
-		if (heldCard == null) {
-			if (isKeyPressed(IM_KEY_SPACE)) {
-				// Ends main phase
-				for (int i=0;i<playerStages.length;i++) if (playerStages[i].getCard() != null) playerStages[i].getCard().setCardState(1);
-				submitMoves(playerMoves);
-				gameClient.nextPhase();
-				return;
-			}
-
-			if (isMousePressed(IM_MOUSE_BUTTON_1)) {
-				checkDragFromHand();
-				checkDragFromStage();
-			}
-		} else {
-			holdCard();
-			if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
-				CardField previousField = heldCard.getCardField();
-				if (previousField instanceof HandField) {
-					// Places a card from hand on stage
-					for (int i=0;i<playerStages.length;i++) {
-						StageField sf = playerStages[i];
-						if (sf.isInBound(mouseX, mouseY) && sf.getCard() == null) {
-							playerHand.removeCard(heldCard);
-							sf.setCard(heldCard);
-							playerMoves.add(new PlayerMove(MT_PLACE, heldCard.getCardID(), sf.getStageID()));
-							break;
-						}
-					}
-				} else if (previousField instanceof StageField) {
-					// Swaps two cards on stage / Moves a card from a stage to another stage
-					boolean any = false;
-					for (int i=0;i<playerStages.length;i++) {
-						StageField sf = playerStages[i];
-						if (sf.isInBound(mouseX, mouseY)) {
-							StageField pf = (StageField)previousField;
-							pf.setCard(sf.getCard());
-							sf.setCard(heldCard);
-							playerMoves.add(new PlayerMove(MT_SWAP, pf.getStageID(), sf.getStageID()));
-							any = true;
-							break;
-						}
-					}
-					// Returns a card from stage to hand / Cancels a card placement
-					if (!any && heldCard.getCardState() == CS_NONE) {
-						StageField pf = (StageField)previousField;
-						pf.setCard(null);
-						playerHand.addCard(heldCard);
-
-						for (int i=0;i<playerMoves.size();i++) {
-							if (playerMoves.get(i).getType() == MT_PLACE && playerMoves.get(i).getArg(0) == heldCard.getCardID()) {
-								playerMoves.remove(i);
+		if (gameClient.isSubPhase(SP_START)) {
+			if (heldCard == null) {
+				if (isKeyPressed(IM_KEY_SPACE)) {
+					// Ends main phase
+					for (int i=0;i<playerStages.length;i++) if (playerStages[i].getCard() != null) playerStages[i].getCard().setCardState(1);
+					gameClient.submitActions(playerActions);
+					gameClient.setPhase(GP_ATTACK);
+				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
+					checkDragFromHand();
+					checkDragFromStage();
+				}
+			} else {
+				holdCard();
+				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
+					CardField previousField = heldCard.getCardField();
+					if (previousField instanceof HandField) {
+						// Places a card from hand on stage
+						for (int i=0;i<playerStages.length;i++) {
+							StageField sf = playerStages[i];
+							if (sf.isInBound(mouseX, mouseY) && sf.getCard() == null) {
+								playerHand.removeCard(heldCard);
+								sf.setCard(heldCard);
+								playerActions.add(new PlayerAction(ACT_PLACEFROMHAND, heldCard.getCardID(), sf.getStageID()));
 								break;
 							}
 						}
+					} else if (previousField instanceof StageField) {
+						// Swaps two cards on stage / Moves a card from a stage to another stage
+						boolean any = false;
+						for (int i=0;i<playerStages.length;i++) {
+							StageField sf = playerStages[i];
+							if (sf.isInBound(mouseX, mouseY)) {
+								StageField pf = (StageField)previousField;
+								pf.setCard(sf.getCard());
+								sf.setCard(heldCard);
+								playerActions.add(new PlayerAction(ACT_SWAPONSTAGE, pf.getStageID(), sf.getStageID()));
+								any = true;
+								break;
+							}
+						}
+						// Returns a card from stage to hand / Cancels a card placement
+						if (!any && heldCard.getCardState() == CS_NONE) {
+							StageField pf = (StageField)previousField;
+							pf.setCard(null);
+							playerHand.addCard(heldCard);
+
+							for (int i=0;i<playerActions.size();i++) {
+								if (playerActions.get(i).type == ACT_PLACEFROMHAND && playerActions.get(i).actions[0] == heldCard.getCardID()) {
+									playerActions.remove(i);
+									break;
+								}
+							}
+						}
 					}
+					dropCard();
 				}
-				dropCard();
 			}
 		}
 	}
 
 	private void onAttackPhase() {
-		if (isKeyPressed(IM_KEY_SPACE)) {
-			// Ends attack phase
-			submitMoves(playerMoves);
-			gameClient.nextPhase();
-			return;
-		}
-
-		if (isMousePressed(IM_MOUSE_BUTTON_1)) {
-			// Selects a card from the center stage
-			selectedCard = null;
-			for (int i=0;i<3;i++) {
-				CardObject sc = playerStages[i].getCard();
-				if (sc != null) {
-					if (sc.getCardState() == CS_STAND && sc.isInBound(mouseX, mouseY)) {
-						selectedCard = sc;
-						break;
+		if (gameClient.isSubPhase(SP_START)) {
+			if (isMousePressed(IM_MOUSE_BUTTON_1)) {
+				// Selects a card from the center stage
+				selectedCard = null;
+				for (int i=0;i<3;i++) {
+					CardObject sc = playerStages[i].getCard();
+					if (sc != null) {
+						if (sc.getCardState() == CS_STAND && sc.isInBound(mouseX, mouseY)) {
+							selectedCard = sc;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (selectedCard != null) {
-			if (selectedCard.getCardField() instanceof StageField) {
+			if (selectedCard != null) {
 				StageField sf = (StageField)selectedCard.getCardField();
 				int sid = sf.getStageID();
 				if (opponentStages[2-sid].hasCard()) {
 					if (isKeyPressed(IM_KEY_1)) {
 						// Submits frontal attack
 						selectedCard.setCardState(2);
-						playerMoves.add(new PlayerMove(MT_ATTACK, 1, sid));
-						submitMoves(playerMoves);
 						selectedCard = null;
+						gameClient.submitAttack(ATK_FRONTAL, sid);
 					} else if (isKeyPressed(IM_KEY_2)) {
 						// Submits side attack
 						selectedCard.setCardState(2);
-						playerMoves.add(new PlayerMove(MT_ATTACK, 2, sid));
-						submitMoves(playerMoves);
 						selectedCard = null;
+						gameClient.submitAttack(ATK_SIDE, sid);
 					}
 				} else {
 					if (isKeyPressed(IM_KEY_0)) {
 						// Submits direct attack
 						selectedCard.setCardState(2);
-						playerMoves.add(new PlayerMove(MT_ATTACK, 0, sid));
-						submitMoves(playerMoves);
 						selectedCard = null;
+						gameClient.submitAttack(ATK_DIRECT, sid);
 					}
 				}
+			}
+
+			if (isKeyPressed(IM_KEY_SPACE)) {
+				// Ends attack phase
+				selectedCard = null;
+				gameClient.setPhase(GP_END);
 			}
 		}
 	}
 
-	private void onLevelUp() {
-		if (playerClock.getNumCards() >= 7) {
-			if (heldCard == null) {
-				if (isMousePressed(IM_MOUSE_BUTTON_1)) checkDragFromClock();
-			} else {
-				holdCard();
-				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
-					if (playerLevel.isInBound(mouseX, mouseY)) {
-						// Level up
-						playerHand.removeCard(heldCard);
-
-						for (int i=0;i<7;i++) {
-							if (playerClock.getCard(i).getCardID() == heldCard.getCardID()) {
-								playerLevel.addCard(playerClock.getCard(i));
-							} else {
-								playerWaitingRoom.addCard(playerClock.getCard(i));
-							}
-						}
-						for (int i=0;i<7;i++) {
-							playerClock.removeCard(playerClock.getCard(0));
-						}
-
-						playerMoves.add(new PlayerMove(MT_LEVELUP, heldCard.getCardID()));
-						submitMoves(playerMoves);
-						gameClient.endPhase();
-					}
-					dropCard();
-				}
-			}
+	private void onEndPhase() {
+		if (gameClient.isSubPhase(SP_START)) {
+			gameClient.actCleanUp();
 		}
+	}
+
+	private void onLevelUp() {
+
 	}
 
 	public void doUserInterface() {
@@ -317,13 +307,13 @@ public class GameGUI {
 		} else if (gameClient.isState(GS_FIRSTDRAW)) {
 			onFirstDraw();
 		} else if (gameClient.isState(GS_GAME)) {
-			if (gameClient.isInTurn() && gameClient.isInPhase()) {
+			if (gameClient.isInTurn()) {
 				if (gameClient.isPhase(GP_WAIT)) {
 
 				} else if (gameClient.isPhase(GP_STANDUP)) {
-
+					onStandUpPhase();
 				} else if (gameClient.isPhase(GP_DRAW)) {
-
+					onDrawPhase();
 				} else if (gameClient.isPhase(GP_CLOCK)) {
 					onClockPhase();
 				} else if (gameClient.isPhase(GP_MAIN)) {
@@ -331,7 +321,7 @@ public class GameGUI {
 				} else if (gameClient.isPhase(GP_ATTACK)) {
 					onAttackPhase();
 				} else if (gameClient.isPhase(GP_END)) {
-
+					onEndPhase();
 				}
 			}
 			if (gameClient.isPhase(GP_LEVELUP)) {
@@ -343,11 +333,6 @@ public class GameGUI {
 	}
 
 	// Frequently used methods
-
-	private void submitMoves(ArrayList<PlayerMove> moves) {
-		gameClient.submitMoves(moves);
-		moves.clear();
-	}
 
 	private void dragCard(CardObject card) {
 		heldCard = card;
@@ -377,7 +362,7 @@ public class GameGUI {
 	private boolean checkDragFromStage() {
 		if (heldCard != null) return false;
 		for (int i=0;i<playerStages.length;i++) {
-			if (playerStages[i].isInBound(mouseX, mouseY)) {
+			if (playerStages[i].hasCard() && playerStages[i].isInBound(mouseX, mouseY)) {
 				dragCard(playerStages[i].getCard());
 				return true;
 			}
@@ -399,7 +384,7 @@ public class GameGUI {
 
 	private void doActionEvent(String[] tkns) {	// TODO TRIGGER, RESHUFFLE
 		if (tkns[0].contentEquals("NEXTPHASE")) {
-			gameClient.nextPhase();
+			//gameClient.nextPhase();
 			actionDelay = 50;
 		} else if (tkns[0].contentEquals("STANDUP")) {
 			for (int i=0;i<playerStages.length;i++) {
@@ -430,12 +415,11 @@ public class GameGUI {
 			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
 			playerClock.addCard(card);
 			actionDelay = 20;
-		} else if (tkns[0].contentEquals("CANCELDAMAGE")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
-			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
-			playerWaitingRoom.addCard(card);
-			actionDelay = 20;
+		} else if (tkns[0].contentEquals("CANCEL")) {	// TODO
+			int cancel = Utility.parseInt(tkns[1]);
+			ArrayList<CardObject> cancelled = playerClock.removeCards(cancel);
+			for (int i=0;i<cancelled.size();i++) playerWaitingRoom.addCard(cancelled.get(i));
+			actionDelay = 50;
 		} else if (tkns[0].contentEquals("REVERSE")) {
 			int stage = Utility.parseInt(tkns[1]);
 			playerStages[stage].getCard().setCardState(CS_REVERSE);
@@ -516,12 +500,11 @@ public class GameGUI {
 			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
 			opponentClock.addCard(card);
 			actionDelay = 20;
-		} else if (tkns[0].contentEquals("OPCANCELDAMAGE")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
-			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
-			opponentWaitingRoom.addCard(card);
-			actionDelay = 20;
+		} else if (tkns[0].contentEquals("OPCANCEL")) {
+			int cancel = Utility.parseInt(tkns[1]);
+			ArrayList<CardObject> cancelled = opponentClock.removeCards(cancel);
+			for (int i=0;i<cancelled.size();i++) opponentWaitingRoom.addCard(cancelled.get(i));
+			actionDelay = 50;
 		} else if (tkns[0].contentEquals("OPREVERSE")) {
 			int stage = Utility.parseInt(tkns[1]);
 			opponentStages[stage].getCard().setCardState(CS_REVERSE);
@@ -673,7 +656,7 @@ public class GameGUI {
 			sp.pushMatrix();
 			sp.translate(-400.0, 288.0, 0.0);
 			sp.scale(12.0, 12.0, 1.0);
-			if (gameClient.isInPhase()) TextManager.renderText(sp, "First Draw. Drag cards into the waiting room to discard them and redraw.", "defont");
+			if (gameClient.isSubPhase(SP_FIRSTDRAW_DISCARD)) TextManager.renderText(sp, "First Draw. Drag cards into the waiting room to discard them and redraw.", "defont");
 			else TextManager.renderText(sp, "Waiting for opponent...", "defont");
 			sp.popMatrix();
 		} else if (gameClient.isState(GS_GAME)) {

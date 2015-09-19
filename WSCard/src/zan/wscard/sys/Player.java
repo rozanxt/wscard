@@ -44,95 +44,41 @@ public class Player {
 		shuffleDeck();
 	}
 
-	public int reshuffleCost() {
-		int cost = playerDeck.remove(0);
-		playerClock.add(cost);
-		return cost;
-	}
-
-	public int takeCard() {
+	public int drawCard() {
 		return playerDeck.remove(0);
 	}
 
-	public int drawCard() {
-		int drawn = playerDeck.remove(0);
-		playerHand.add(drawn);
-		return drawn;
+	public void addToHand(int card) {
+		playerHand.add(card);
 	}
 
-	public boolean discardCard(int card) {
-		for (int i=0;i<playerHand.size();i++) {
-			if (playerHand.get(i) == card) {
-				playerHand.remove(i);
-				playerWaitingRoom.add(card);
-				return true;
-			}
-		}
-		return false;
+	public void addToWaitingRoom(int card) {
+		playerWaitingRoom.add(card);
 	}
 
-	public boolean discardStageCard(int stage) {
-		if (playerStages[stage] != -1) {
-			playerWaitingRoom.add(playerStages[stage]);
-			playerStages[stage] = -1;
-			return true;
-		}
-		return false;
+	public void addToClock(int clock) {
+		playerClock.add(clock);
 	}
 
-	public boolean placeCard(int card, int stage) {
-		for (int i=0;i<playerHand.size();i++) {
-			if (playerHand.get(i) == card) {
-				playerHand.remove(i);
-				playerStages[stage] = card;
-				return true;
-			}
-		}
-		return false;
+	public void placeOnStage(int card, int stage) {
+		playerStages[stage] = card;
 	}
 
-	public void swapCard(int stage1, int stage2) {
-		int temp = playerStages[stage1];
+	public void swapOnStage(int stage1, int stage2) {
+		int card = playerStages[stage1];
 		playerStages[stage1] = playerStages[stage2];
-		playerStages[stage2] = temp;
+		playerStages[stage2] = card;
 	}
 
-	public int clockCard(int card) {
+	public boolean removeFromHand(int card) {
 		for (int i=0;i<playerHand.size();i++) {
 			if (playerHand.get(i) == card) {
 				playerHand.remove(i);
-				playerClock.add(card);
-				return playerClock.size();
+				return true;
 			}
 		}
-		return NO_CARD;
+		return false;
 	}
-
-	public int triggerCard() {
-		int trigger = playerDeck.remove(0);
-		playerStock.add(trigger);
-		return trigger;
-	}
-
-	public int damageCard(int card) {
-		playerClock.add(card);
-		return playerClock.size();
-	}
-
-	public void levelUp(int card) {
-		for (int i=0;i<7;i++) {
-			if (playerClock.get(i) == card) {
-				playerLevel.add(card);
-			} else {
-				playerWaitingRoom.add(playerClock.get(i));
-			}
-		}
-		for (int i=0;i<7;i++) playerClock.remove(0);
-	}
-
-	public boolean isDeckEmpty() {return playerDeck.isEmpty();}
-
-	public int getLevel() {return playerLevel.size();}
 
 	public int getHandCard(int hand) {return playerHand.get(hand);}
 	public int getStageCard(int stage) {return playerStages[stage];}

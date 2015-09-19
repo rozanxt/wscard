@@ -37,6 +37,13 @@ public class ClockField extends CardField {
 	}
 	public void removeCard(CardObject card) {clockCards.remove(card);}
 
+	public ArrayList<CardObject> removeCards(int num) {
+		ArrayList<CardObject> removed = new ArrayList<CardObject>();
+		for (int i=clockCards.size()-num;i<clockCards.size();i++) removed.add(clockCards.get(i));
+		clockCards.removeAll(removed);
+		return removed;
+	}
+
 	public CardObject getCard(int card) {return clockCards.get(card);}
 
 	public int getNumCards(){return clockCards.size();}

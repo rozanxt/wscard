@@ -8,12 +8,12 @@ public class NetworkGameServer extends GameServer {
 
 	protected void writeToClient(int cid, String msg) {
 		NetworkManager.writeToClient(cid, msg);
-		if (DEBUG && msg != null) System.out.println("SERVER OUT " + cid + ": " + msg);
+		if (DEBUG && msg != null) System.out.println("SERVER TO: " + cid + " " + msg);
 	}
 
 	protected void writeToAllClients(String msg) {
 		NetworkManager.writeToAllClients(msg);
-		if (DEBUG && msg != null) System.out.println("SERVER OUT ALL: " + msg);
+		if (DEBUG && msg != null) System.out.println("SERVER TO: A " + msg);
 	}
 
 	protected String getInbox() {
