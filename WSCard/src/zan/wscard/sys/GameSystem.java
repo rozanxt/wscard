@@ -19,10 +19,12 @@ public abstract class GameSystem {
 	public static final int REQ_NONE = 0;
 	public static final int REQ_DRAW = 1;
 	public static final int REQ_DEALDAMAGE = 2;
+	public static final int REQ_LEVELUP = 3;
 
 	public static final int ANS_NONE = 0;
 	public static final int ANS_DRAW = 1;
 	public static final int ANS_DEALDAMAGE = 2;
+	public static final int ANS_LEVELUP = 3;
 
 	public static final int ACT_NONE = 0;
 	public static final int ACT_ENDTURN = 1;

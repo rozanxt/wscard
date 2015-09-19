@@ -146,6 +146,7 @@ public abstract class GameClient extends GameSystem {
 			}
 		}
 		attackInfo.setTrigger(trigger);
+		actionStack.add("TRIGGER " + trigger);
 		sendToServer(MSG_ACTION, ACT_ATTACK_TRIGGER, trigger);
 		sendToServer(MSG_REQUEST, REQ_DEALDAMAGE, attackInfo.getDamage());
 		setSubPhase(SP_ATTACK_DEALDAMAGE);

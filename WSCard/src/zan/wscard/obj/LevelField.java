@@ -39,7 +39,7 @@ public class LevelField extends CardField {
 
 	public CardObject getCard(int card) {return levelCards.get(card);}
 
-	public int getNumCards(){return levelCards.size();}
+	public int getNumCards() {return levelCards.size();}
 
 	@Override
 	public boolean isInBound(double sx, double sy) {

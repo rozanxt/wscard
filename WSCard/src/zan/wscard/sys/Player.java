@@ -56,8 +56,12 @@ public class Player {
 		playerWaitingRoom.add(card);
 	}
 
-	public void addToClock(int clock) {
-		playerClock.add(clock);
+	public void addToClock(int card) {
+		playerClock.add(card);
+	}
+
+	public void addToStock(int card) {
+		playerStock.add(card);
 	}
 
 	public void placeOnStage(int card, int stage) {

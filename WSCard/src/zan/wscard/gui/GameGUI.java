@@ -68,8 +68,8 @@ public class GameGUI {
 		playerLevel = new LevelField(-250.0, -40.0);
 		opponentLevel = new LevelField(250.0, 40.0);
 
-		playerStock = new StockField(-250.0, -50.0);
-		opponentStock = new StockField(250.0, 50.0);
+		playerStock = new StockField(180.0, -100.0);
+		opponentStock = new StockField(-180.0, 100.0);
 
 		playerHand = new HandField(0.0, -240.0);
 		opponentHand = new HandField(0.0, 240.0);
@@ -117,7 +117,8 @@ public class GameGUI {
 					// Submits discarded cards in first draw
 					int redraw = playerActions.size();
 					gameClient.submitActions(playerActions);
-					gameClient.sendToServer(MSG_REQUEST, REQ_DRAW, redraw);
+					if (redraw > 0) gameClient.sendToServer(MSG_REQUEST, REQ_DRAW, redraw);
+					else gameClient.sendToServer(MSG_ACTION, ACT_ENDTURN);
 					gameClient.setSubPhase(SP_END);
 				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
 					checkDragFromHand();
@@ -302,6 +303,8 @@ public class GameGUI {
 	}
 
 	public void doUserInterface() {
+		if (isKeyPressed(IM_KEY_P)) gameClient.sendToServer(MSG_PING);
+
 		if (gameClient.isState(GS_INIT)) {
 			onInit();
 		} else if (gameClient.isState(GS_FIRSTDRAW)) {
@@ -409,6 +412,12 @@ public class GameGUI {
 			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
 			playerClock.addCard(card);
 			actionDelay = 30;
+		} else if (tkns[0].contentEquals("TRIGGER")) {
+			int id = Utility.parseInt(tkns[1]);
+			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
+			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
+			playerStock.addCard(card);
+			actionDelay = 50;
 		} else if (tkns[0].contentEquals("DAMAGE")) {
 			int id = Utility.parseInt(tkns[1]);
 			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
@@ -494,6 +503,12 @@ public class GameGUI {
 			int stage = Utility.parseInt(tkns[2]);
 			opponentStages[stage].getCard().setCardState(CS_REST);
 			actionDelay = 40;
+		} else if (tkns[0].contentEquals("OPTRIGGER")) {
+			int id = Utility.parseInt(tkns[1]);
+			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
+			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
+			opponentStock.addCard(card);
+			actionDelay = 50;
 		} else if (tkns[0].contentEquals("OPDAMAGE")) {
 			int id = Utility.parseInt(tkns[1]);
 			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
