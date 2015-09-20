@@ -7,146 +7,113 @@ import zan.lib.util.Utility;
 
 public abstract class GameClient extends GameSystem {
 
-	private Player player = new Player();
-	private Player opponent = new Player();
+	private int clientID = PL_NONE;
 
 	private ArrayList<String> clientLog = new ArrayList<String>();
 	private int logCount = 0;
 	private boolean waitForVerification = false;
 
-	private ArrayList<String> actionStack = new ArrayList<String>();
-
-	private AttackInfo attackInfo = new AttackInfo();
-
-	private int clientID = PL_NONE;
+	private Player player = new Player();
+	private Player opponent = new Player();
 
 	private int subPhase = SP_END;
+
+	private AttackInfo attackInfo = new AttackInfo();
+	private ArrayList<String> actionStack = new ArrayList<String>();
 
 	public void initClient(PlayerInfo infoPlayer, PlayerInfo infoOpponent) {
 		player.setInfo(infoPlayer);
 		opponent.setInfo(infoOpponent);
 	}
 
-	public void actStandUp() {
-		syncAction(ACT_STANDUP);
-		sendToServer(MSG_ACTION, ACT_STANDUP);
-		setSubPhase(SP_END);
+	public void actPing() {
+		sendToServer(MSG_PING);
 	}
-
+	public void actReady() {
+		sendToServer(MSG_READY);
+	}
+	public void actFirstDraw() {
+		sendToServer(MSG_REQUEST, REQ_DRAW, 5);
+		setSubPhase(SP_FIRSTDRAW_DRAW);
+	}
+	public void actRedraw(ArrayList<String> redraw) {	// TODO
+		for (int i=0;i<redraw.size();i++) sendToServer(redraw.get(i));
+		if (redraw.size() > 0) sendToServer(MSG_REQUEST, REQ_DRAW, redraw.size());
+		else stackAction(ACS_ENDTURN);
+		redraw.clear();
+		endPhase();
+	}
+	public void actStandUp() {
+		sendToServer(MSG_ACTION, ACT_STANDUP);
+		endPhase();
+	}
 	public void actDraw() {
 		sendToServer(MSG_REQUEST, REQ_DRAW, 1);
-		setSubPhase(SP_END);
+		endPhase();
 	}
-
-	public void actCleanUp() {
-		syncAction(ACT_CLEANUP);
-		sendToServer(MSG_ACTION, ACT_CLEANUP);
-		setSubPhase(SP_END);
-	}
-
-	public void submitActions(ArrayList<PlayerAction> actions) {
-		for (int i=0;i<actions.size();i++) {
-			syncAction(actions.get(i).type, actions.get(i).actions);
-			sendArrayToServer(MSG_ACTION, actions.get(i).type, actions.get(i).actions);
+	public void actClock(int card) {
+		if (card == CARD_NONE) {
+			stackAction(ACS_PHASE, GP_MAIN);
+			endPhase();
+		} else {
+			sendToServer(MSG_ACTION, ACT_CLOCKFROMHAND, card);
+			sendToServer(MSG_REQUEST, REQ_DRAW, 2);
+			endPhase();
 		}
-		actions.clear();
 	}
-
-	public void submitAttack(int type, int stage) {
-		syncAction(ACT_ATTACK_DECLARATION, type, stage);
+	public void actMain(ArrayList<String> actions) {	// TODO
+		for (int i=0;i<actions.size();i++) sendToServer(actions.get(i));
+		actions.clear();
+		endPhase();
+	}
+	public void actAttack(int type, int stage) {
 		sendToServer(MSG_ACTION, ACT_ATTACK_DECLARATION, type, stage);
 		sendToServer(MSG_REQUEST, REQ_DRAW, 1);
 		setSubPhase(SP_ATTACK_TRIGGER);
 	}
+	public void endAttack() {
+		stackAction(ACS_PHASE, GP_END);
+		endPhase();
+	}
+	public void actCleanUp() {
+		sendToServer(MSG_ACTION, ACT_CLEANUP);
+		endPhase();
+	}
 
 	public void sendPhase(int phase) {
-		syncPhase(phase);
-		sendToServer(MSG_PHASE, gamePhase);
+		sendToServer(MSG_PHASE, phase);
 	}
-	public void setSubPhase(int phase) {
-		subPhase = phase;
-	}
+
 	private void syncState(int state) {
 		if (!isState(state)) {
 			setState(state);
-
-			if (isState(GS_FIRSTDRAW)) {
-				setSubPhase(SP_START);
-			}
+			if (isState(GS_FIRSTDRAW)) startPhase();
 		}
 	}
 	private void syncPhase(int phase) {
 		if (!isPhase(phase)) {
 			setPhase(phase);
-
-			if (isInTurn()) {
-				setSubPhase(SP_START);
-			}
+			if (isInTurn()) startPhase();
 		}
 	}
 	private void syncTurn(int turn) {
 		if (!isTurn(turn)) {
 			setTurn(turn);
-
-			if (isInTurn()) {
-				sendPhase(GP_STANDUP);
-			}
+			if (isInTurn()) stackAction(ACS_PHASE, GP_STANDUP);
 		}
 	}
-
-	private void syncAction(int type, int... actions) {
-		if (type == ACT_STANDUP) {
-			// TODO Player card state CS_STAND
-			actionStack.add("WAIT 50");
-			actionStack.add("STANDUP");
-			actionStack.add("PHASE " + GP_DRAW);
-		} else if (type == ACT_DRAWTOHAND) {
-			for (int i=0;i<actions.length;i++) {
-				if (actions[i] != CARD_NONE) {
-					player.addToHand(actions[i]);
-					actions[i] = 0;
-				}
-			}
-		} else if (type == ACT_DISCARDFROMHAND) {
-			player.removeFromHand(actions[0]);
-			player.addToWaitingRoom(actions[0]);
-		} else if (type == ACT_CLOCKFROMHAND) {
-			player.removeFromHand(actions[0]);
-			player.addToClock(actions[0]);
-		} else if (type == ACT_PLACEFROMHAND) {
-			player.removeFromHand(actions[0]);
-			player.placeOnStage(actions[0], actions[1]);
-		} else if (type == ACT_SWAPONSTAGE) {
-			player.swapOnStage(actions[0], actions[1]);
-		} else if (type == ACT_ATTACK_DECLARATION) {
-			// TODO Player card state CS_REST
-			attackInfo.clear();
-			attackInfo.setAttack(player, opponent);
-			attackInfo.setType(actions[0]);
-			attackInfo.setStage(actions[1]);
-		} else if (type == ACT_ATTACK_TRIGGER) {
-			player.addToStock(actions[0]);
-		} else if (type == ACT_ATTACK_DAMAGE) {
-			for (int i=0;i<actions.length;i++) {
-				if (actions[i] != CARD_NONE) opponent.addToClock(actions[i]);
-			}
-		} else if (type == ACT_CLEANUP) {
-			// TODO Player card state CS_REVERSE to Waiting Room
-			actionStack.add("OPCLEANUP");
-			actionStack.add("CLEANUP");
-			actionStack.add("ENDTURN");
-		}
-	}
-
 
 	private void doDrawToHand(int[] cards) {
 		for (int i=0;i<cards.length;i++) {
-			if (cards[i] == CARD_NONE) actionStack.add("RESHUFFLE");
-			else actionStack.add("DRAW " + cards[i]);
+			if (cards[i] == CARD_NONE) {
+				stackAction(ACS_PL_RESHUFFLE);
+			} else {
+				player.addToHand(cards[i]);
+				stackAction(ACS_PL_DRAWTOHAND, cards[i]);
+			}
 		}
 		sendArrayToServer(MSG_ACTION, ACT_DRAWTOHAND, cards);
 	}
-
 	private void doDrawTrigger(int[] cards) {
 		int trigger = CARD_NONE;
 		for (int i=0;i<cards.length;i++) {
@@ -155,129 +122,241 @@ public abstract class GameClient extends GameSystem {
 				break;
 			}
 		}
-		attackInfo.setTrigger(trigger);
-		actionStack.add("TRIGGER " + trigger);
 		sendToServer(MSG_ACTION, ACT_ATTACK_TRIGGER, trigger);
+	}
+	private void doRequestDamage() {
 		sendToServer(MSG_REQUEST, REQ_DEALDAMAGE, attackInfo.getDamage());
-		setSubPhase(SP_ATTACK_DEALDAMAGE);
 	}
-
-	private void doDealDamage(int[] damage) {
-		int damageCnt = 0;
-		for (int i=0;i<damage.length;i++) {
-			if (damage[i] == CARD_NONE) {
-				actionStack.add("OPRESHUFFLE");
-			} else {
-				damageCnt++;
-				actionStack.add("OPDAMAGE " + damage[i]);
-			}
-			if (opponent.getCardData(damage[i]).type == CARD_CLIMAX) {
-				actionStack.add("OPCANCEL " + damageCnt);
-				damageCnt = 0;
-			}
-		}
-		sendArrayToServer(MSG_ACTION, ACT_ATTACK_DAMAGE, damage);
+	private void doDealDamage(int[] cards) {
+		sendArrayToServer(MSG_ACTION, ACT_ATTACK_DAMAGE, cards);
 	}
-
-	private void doAttackBattle() {
+	private void doBattle() {
 		int result = attackInfo.getBattleResult();
-		if (result == BTL_ATTACKER) {
-			actionStack.add("OPREVERSE " + attackInfo.getDefenderStage());
-		} else if (result == BTL_DEFENDER) {
-			actionStack.add("REVERSE " + attackInfo.getAttackerStage());
-		} else if (result == BTL_TIE) {
-			actionStack.add("OPREVERSE " + attackInfo.getDefenderStage());
-			actionStack.add("REVERSE " + attackInfo.getAttackerStage());
-		}
 		sendToServer(MSG_ACTION, ACT_ATTACK_BATTLE, result);
-
-		attackInfo.clear();
-		setSubPhase(SP_START);
 	}
 
-	private void infoStandUp() {
-		actionStack.add("OPSTANDUP");
+	private void processAnswer(int type, int[] content) {
+		if (isState(GS_FIRSTDRAW)) {
+			if (type == ANS_DRAW) {
+				doDrawToHand(content);
+				if (isSubPhase(SP_FIRSTDRAW_DRAW)) setSubPhase(SP_FIRSTDRAW_DISCARD);
+				else if (isSubPhase(SP_END)) stackAction(ACS_ENDTURN);
+			}
+		} else if (isState(GS_GAME)) {
+			if (type == ANS_DRAW) {
+				if (isPhase(GP_DRAW)) {
+					doDrawToHand(content);
+					stackAction(ACS_PHASE, GP_CLOCK);
+				} else if (isPhase(GP_CLOCK)) {
+					doDrawToHand(content);
+					stackAction(ACS_PHASE, GP_MAIN);
+				} else if (isPhase(GP_ATTACK) && isSubPhase(SP_ATTACK_TRIGGER)) {
+					doDrawTrigger(content);
+					setSubPhase(SP_ATTACK_DAMAGE);
+					doRequestDamage();
+				}
+			} else if (type == ANS_DEALDAMAGE) {
+				if (isPhase(GP_ATTACK) && isSubPhase(SP_ATTACK_DAMAGE)) {
+					doDealDamage(content);
+					setSubPhase(SP_ATTACK_BATTLE);
+					doBattle();
+				}
+			} else if (type == ANS_LEVELUP) {
+				// TODO
+			}
+		}
 	}
-
-	private void infoDrawToHand(int[] cards) {
-		for (int i=0;i<cards.length;i++) {
-			if (cards[i] == CARD_NONE) {
-				actionStack.add("OPRESHUFFLE");
+	private void processPlayerInfo(int info, int[] content) {
+		if (info == ACT_NONE) {
+			// NONE
+		} else if (info == ACT_ENDTURN) {
+			// NONE
+		} else if (info == ACT_STANDUP) {
+			player.doStandUp();
+			stackAction(ACS_WAIT, 30);
+			stackAction(ACS_PL_STANDUP);
+			stackAction(ACS_PHASE, GP_DRAW);
+		} else if (info == ACT_DRAWTOHAND) {
+			// in 'drawToHand' method
+		} else if (info == ACT_DISCARDFROMHAND) {
+			player.removeFromHand(content[0]);
+			player.addToWaitingRoom(content[0]);
+			stackAction(ACS_PL_DISCARDFROMHAND, content[0]);
+		} else if (info == ACT_CLOCKFROMHAND) {
+			player.removeFromHand(content[0]);
+			player.addToClock(content[0]);
+			stackAction(ACS_PL_CLOCKFROMHAND, content[0]);
+		} else if (info == ACT_PLACEFROMHAND) {
+			player.removeFromHand(content[0]);
+			player.placeOnStage(content[0], content[1]);
+			stackAction(ACS_PL_PLACEFROMHAND, content[0], content[1]);
+		} else if (info == ACT_SWAPONSTAGE) {
+			player.swapOnStage(content[0], content[1]);
+			stackAction(ACS_PL_SWAPONSTAGE, content[0], content[1]);
+		} else if (info == ACT_MAIN_END) {
+			stackAction(ACS_PHASE, GP_ATTACK);
+		} else if (info == ACT_ATTACK_DECLARATION) {
+			attackInfo.clear();
+			attackInfo.setAttack(player, opponent);
+			attackInfo.setType(content[0]);
+			attackInfo.setStage(content[1]);
+			player.setCardState(content[1], CS_REST);
+			stackAction(ACS_PL_ATTACK_DECLARATION, content[0], content[1]);
+		} else if (info == ACT_ATTACK_TRIGGER) {
+			attackInfo.setTrigger(content[0]);
+			player.addToStock(content[0]);
+			stackAction(ACS_PL_ATTACK_TRIGGER, content[0]);
+		} else if (info == ACT_ATTACK_DAMAGE) {
+			if (content.length > 0) {
+				if (opponent.getCardData(content[content.length-1]).type == CARD_CLIMAX) {
+					int cancelled = 0;
+					for (int i=0;i<content.length;i++) {
+						if (content[i] == CARD_NONE) {
+							stackAction(ACS_OP_RESHUFFLE);
+						} else {
+							cancelled++;
+							opponent.addToWaitingRoom(content[i]);
+							stackAction(ACS_OP_ATTACK_DAMAGE, content[i]);
+						}
+					}
+					stackAction(ACS_OP_ATTACK_CANCEL, cancelled);
+				} else {
+					for (int i=0;i<content.length;i++) {
+						if (content[i] == CARD_NONE) {
+							stackAction(ACS_OP_RESHUFFLE);
+						} else {
+							opponent.addToClock(content[i]);
+							stackAction(ACS_OP_ATTACK_DAMAGE, content[i]);
+						}
+					}
+				}
 			} else {
-				opponent.addToHand(cards[i]);
-				actionStack.add("OPDRAW");
+				// TODO No damage
 			}
+		} else if (info == ACT_ATTACK_BATTLE) {
+			if (content[0] == BTL_ATTACKER) {
+				opponent.setCardState(attackInfo.getDefenderStage(), CS_REVERSE);
+				stackAction(ACS_OP_REVERSE, attackInfo.getDefenderStage());
+			} else if (content[0] == BTL_DEFENDER) {
+				player.setCardState(attackInfo.getAttackerStage(), CS_REVERSE);
+				stackAction(ACS_PL_REVERSE, attackInfo.getAttackerStage());
+			} else if (content[0] == BTL_TIE) {
+				opponent.setCardState(attackInfo.getDefenderStage(), CS_REVERSE);
+				player.setCardState(attackInfo.getAttackerStage(), CS_REVERSE);
+				stackAction(ACS_OP_REVERSE, attackInfo.getDefenderStage());
+				stackAction(ACS_PL_REVERSE, attackInfo.getAttackerStage());
+			}
+			attackInfo.clear();
+			stackAction(ACS_SUBPHASE, SP_START);
+		} else if (info == ACT_CLEANUP) {
+			opponent.doCleanUp();
+			player.doCleanUp();
+			stackAction(ACS_OP_CLEANUP);
+			stackAction(ACS_PL_CLEANUP);
+			stackAction(ACS_ENDTURN);
+		} else if (info == ACT_LEVELUP) {
+			player.doLevelUp(content[0]);
+			stackAction(ACS_PL_LEVELUP, content[0]);
 		}
 	}
-
-	private void infoDiscardFromHand(int card) {
-		opponent.removeFromHand(card);
-		opponent.addToWaitingRoom(card);
-		actionStack.add("OPDISCARD " + card);
-	}
-
-	private void infoClockFromHand(int card) {
-		opponent.removeFromHand(card);
-		opponent.addToClock(card);
-		actionStack.add("OPCLOCK " + card);
-	}
-
-	private void infoPlaceFromHand(int card, int stage) {
-		opponent.removeFromHand(card);
-		opponent.placeOnStage(card, stage);
-		actionStack.add("OPPLACE " + card + " " + stage);
-	}
-
-	private void infoSwapOnStage(int stage1, int stage2) {
-		opponent.swapOnStage(stage1, stage2);
-		actionStack.add("OPMOVE " + stage1 + " " + stage2);
-	}
-
-	private void infoAttackDeclaration(int type, int stage) {
-		attackInfo.clear();
-		attackInfo.setAttack(opponent, player);
-		attackInfo.setType(type);
-		attackInfo.setStage(stage);
-		actionStack.add("OPATTACK " + type + " " + stage);
-	}
-
-	private void infoAttackTrigger(int trigger) {
-		attackInfo.setTrigger(trigger);
-		actionStack.add("OPTRIGGER " + trigger);
-	}
-
-	private void infoAttackDamage(int[] damage) {
-		int damageCnt = 0;
-		for (int i=0;i<damage.length;i++) {
-			if (damage[i] == CARD_NONE) {
-				actionStack.add("RESHUFFLE");
+	private void processOpponentInfo(int info, int[] content) {
+		if (info == ACT_NONE) {
+			// NONE
+		} else if (info == ACT_ENDTURN) {
+			// NONE
+		} else if (info == ACT_STANDUP) {
+			opponent.doStandUp();
+			stackAction(ACS_WAIT, 30);
+			stackAction(ACS_OP_STANDUP);
+			stackAction(ACS_PHASE, GP_DRAW);
+		} else if (info == ACT_DRAWTOHAND) {
+			for (int i=0;i<content.length;i++) {
+				if (content[i] == CARD_NONE) {
+					stackAction(ACS_OP_RESHUFFLE);
+				} else {
+					player.addToHand(content[i]);
+					stackAction(ACS_OP_DRAWTOHAND, content[i]);
+				}
+			}
+		} else if (info == ACT_DISCARDFROMHAND) {
+			opponent.removeFromHand(content[0]);
+			opponent.addToWaitingRoom(content[0]);
+			stackAction(ACS_OP_DISCARDFROMHAND, content[0]);
+		} else if (info == ACT_CLOCKFROMHAND) {
+			opponent.removeFromHand(content[0]);
+			opponent.addToClock(content[0]);
+			stackAction(ACS_OP_CLOCKFROMHAND, content[0]);
+		} else if (info == ACT_PLACEFROMHAND) {
+			opponent.removeFromHand(content[0]);
+			opponent.placeOnStage(content[0], content[1]);
+			stackAction(ACS_OP_PLACEFROMHAND, content[0], content[1]);
+		} else if (info == ACT_SWAPONSTAGE) {
+			opponent.swapOnStage(content[0], content[1]);
+			stackAction(ACS_OP_SWAPONSTAGE, content[0], content[1]);
+		} else if (info == ACT_MAIN_END) {
+			// NONE
+		} else if (info == ACT_ATTACK_DECLARATION) {
+			attackInfo.clear();
+			attackInfo.setAttack(opponent, player);
+			attackInfo.setType(content[0]);
+			attackInfo.setStage(content[1]);
+			opponent.setCardState(content[1], CS_REST);
+			stackAction(ACS_OP_ATTACK_DECLARATION, content[0], content[1]);
+		} else if (info == ACT_ATTACK_TRIGGER) {
+			attackInfo.setTrigger(content[0]);
+			opponent.addToStock(content[0]);
+			stackAction(ACS_OP_ATTACK_TRIGGER, content[0]);
+		} else if (info == ACT_ATTACK_DAMAGE) {
+			if (content.length > 0) {
+				if (player.getCardData(content[content.length-1]).type == CARD_CLIMAX) {
+					int cancelled = 0;
+					for (int i=0;i<content.length;i++) {
+						if (content[i] == CARD_NONE) {
+							stackAction(ACS_PL_RESHUFFLE);
+						} else {
+							cancelled++;
+							player.addToWaitingRoom(content[i]);
+							stackAction(ACS_PL_ATTACK_DAMAGE, content[i]);
+						}
+					}
+					stackAction(ACS_PL_ATTACK_CANCEL, cancelled);
+				} else {
+					for (int i=0;i<content.length;i++) {
+						if (content[i] == CARD_NONE) {
+							stackAction(ACS_PL_RESHUFFLE);
+						} else {
+							player.addToClock(content[i]);
+							stackAction(ACS_PL_ATTACK_DAMAGE, content[i]);
+						}
+					}
+				}
 			} else {
-				damageCnt++;
-				actionStack.add("DAMAGE " + damage[i]);
+				// TODO No damage
 			}
-			if (player.getCardData(damage[i]).type == CARD_CLIMAX) {
-				actionStack.add("CANCEL " + damageCnt);
-				damageCnt = 0;
+		} else if (info == ACT_ATTACK_BATTLE) {
+			if (content[0] == BTL_ATTACKER) {
+				player.setCardState(attackInfo.getDefenderStage(), CS_REVERSE);
+				stackAction(ACS_PL_REVERSE, attackInfo.getDefenderStage());
+			} else if (content[0] == BTL_DEFENDER) {
+				opponent.setCardState(attackInfo.getAttackerStage(), CS_REVERSE);
+				stackAction(ACS_OP_REVERSE, attackInfo.getAttackerStage());
+			} else if (content[0] == BTL_TIE) {
+				player.setCardState(attackInfo.getDefenderStage(), CS_REVERSE);
+				opponent.setCardState(attackInfo.getAttackerStage(), CS_REVERSE);
+				stackAction(ACS_PL_REVERSE, attackInfo.getDefenderStage());
+				stackAction(ACS_OP_REVERSE, attackInfo.getAttackerStage());
 			}
+			attackInfo.clear();
+		} else if (info == ACT_CLEANUP) {
+			player.doCleanUp();
+			opponent.doCleanUp();
+			stackAction(ACS_PL_CLEANUP);
+			stackAction(ACS_OP_CLEANUP);
+		} else if (info == ACT_LEVELUP) {
+			opponent.doLevelUp(content[0]);
+			stackAction(ACS_OP_LEVELUP, content[0]);
 		}
 	}
-
-	private void infoAttackBattle(int result) {
-		if (result == BTL_ATTACKER) {
-			actionStack.add("REVERSE " + attackInfo.getDefenderStage());
-		} else if (result == BTL_DEFENDER) {
-			actionStack.add("OPREVERSE " + attackInfo.getAttackerStage());
-		} else if (result == BTL_TIE) {
-			actionStack.add("REVERSE " + attackInfo.getDefenderStage());
-			actionStack.add("OPREVERSE " + attackInfo.getAttackerStage());
-		}
-	}
-
-	private void infoCleanUp() {
-		actionStack.add("CLEANUP");
-		actionStack.add("OPCLEANUP");
-	}
-
 	private void processMessage(int[] tkns) {
 		if (tkns[0] == MSG_PING) {
 			sendToServer(MSG_PONG);
@@ -288,57 +367,12 @@ public abstract class GameClient extends GameSystem {
 		} else if (tkns[0] == MSG_TURN) {
 			syncTurn(tkns[1]);
 		} else if (tkns[0] == MSG_ANSWER) {
-			if (tkns[1] == ANS_DRAW) {
-				if (isState(GS_FIRSTDRAW)) {
-					doDrawToHand(Arrays.copyOfRange(tkns, 2, tkns.length));
-					if (isSubPhase(SP_END)) sendToServer(MSG_ACTION, ACT_ENDTURN);
-				} else if (isState(GS_GAME)) {
-					if (isPhase(GP_DRAW)) {
-						doDrawToHand(Arrays.copyOfRange(tkns, 2, tkns.length));
-						actionStack.add("PHASE " + GP_CLOCK);
-					} else if (isPhase(GP_CLOCK)) {
-						doDrawToHand(Arrays.copyOfRange(tkns, 2, tkns.length));
-						actionStack.add("PHASE " + GP_MAIN);
-					} else if (isPhase(GP_ATTACK)) {
-						if (isSubPhase(SP_ATTACK_TRIGGER)) {
-							doDrawTrigger(Arrays.copyOfRange(tkns, 2, tkns.length));
-						}
-					}
-				}
-			} else if (tkns[1] == ANS_DEALDAMAGE) {
-				if (isState(GS_GAME) && isPhase(GP_ATTACK) && isSubPhase(SP_ATTACK_DEALDAMAGE)) {
-					doDealDamage(Arrays.copyOfRange(tkns, 2, tkns.length));
-					setSubPhase(SP_ATTACK_BATTLE);
-					doAttackBattle();
-				}
-			}
+			processAnswer(tkns[1], Arrays.copyOfRange(tkns, 2, tkns.length));
 		} else if (tkns[0] == MSG_INFO) {
 			if (tkns[1] == clientID) {
-				// TODO INFO SYNC
+				processPlayerInfo(tkns[2], Arrays.copyOfRange(tkns, 3, tkns.length));
 			} else {
-				if (tkns[2] == ACT_STANDUP) {
-					infoStandUp();
-				} else if (tkns[2] == ACT_DRAWTOHAND) {
-					infoDrawToHand(Arrays.copyOfRange(tkns, 3, tkns.length));
-				} else if (tkns[2] == ACT_DISCARDFROMHAND) {
-					infoDiscardFromHand(tkns[3]);
-				} else if (tkns[2] == ACT_CLOCKFROMHAND) {
-					infoClockFromHand(tkns[3]);
-				} else if (tkns[2] == ACT_PLACEFROMHAND) {
-					infoPlaceFromHand(tkns[3], tkns[4]);
-				} else if (tkns[2] == ACT_SWAPONSTAGE) {
-					infoSwapOnStage(tkns[3], tkns[4]);
-				} else if (tkns[2] == ACT_ATTACK_DECLARATION) {
-					infoAttackDeclaration(tkns[3], tkns[4]);
-				} else if (tkns[2] == ACT_ATTACK_TRIGGER) {
-					infoAttackTrigger(tkns[3]);
-				} else if (tkns[2] == ACT_ATTACK_DAMAGE) {
-					infoAttackDamage(Arrays.copyOfRange(tkns, 3, tkns.length));
-				} else if (tkns[2] == ACT_ATTACK_BATTLE) {
-					infoAttackBattle(tkns[3]);
-				} else if (tkns[2] == ACT_CLEANUP) {
-					infoCleanUp();
-				}
+				processOpponentInfo(tkns[2], Arrays.copyOfRange(tkns, 3, tkns.length));
 			}
 		}
 	}
@@ -375,33 +409,46 @@ public abstract class GameClient extends GameSystem {
 
 	public int getClientID() {return clientID;}
 
-	public boolean isSubPhase(int phase) {return (subPhase == phase);}
-	public boolean isInTurn() {return isTurn(clientID);}
-
 	public Player getPlayer() {return player;}
 	public Player getOpponent() {return opponent;}
 
+	public boolean isInTurn() {return isTurn(clientID);}
+
+	public void setSubPhase(int phase) {subPhase = phase;}
+	public void startPhase() {setSubPhase(SP_START);}
+	public void endPhase() {setSubPhase(SP_END);}
+	public boolean isSubPhase(int phase) {return (subPhase == phase);}
+
+	public void endTurn() {
+		sendToServer(MSG_ACTION + " " + ACT_ENDTURN);
+	}
+
+	private void stackAction(int type, int... data) {
+		StringBuilder act = new StringBuilder().append(type);
+		for (int i=0;i<data.length;i++) act.append(" ").append(data[i]);
+		actionStack.add(act.toString());
+	}
 	public String getAction() {
 		if (actionStack.isEmpty()) return null;
 		return actionStack.remove(0);
 	}
 
-	public void sendArrayListToServer(int msg, int type, ArrayList<Integer> data) {
+	private void sendArrayListToServer(int msg, int type, ArrayList<Integer> data) {
 		StringBuilder act = new StringBuilder().append(msg).append(" ").append(type);
 		for (int i=0;i<data.size();i++) act.append(" ").append(data.get(i));
 		sendToServer(act.toString());
 	}
-	public void sendArrayToServer(int msg, int type, int[] data) {
+	private void sendArrayToServer(int msg, int type, int[] data) {
 		StringBuilder act = new StringBuilder().append(msg).append(" ").append(type);
 		for (int i=0;i<data.length;i++) act.append(" ").append(data[i]);
 		sendToServer(act.toString());
 	}
-	public void sendToServer(int msg, int... data) {
+	private void sendToServer(int msg, int... data) {
 		StringBuilder act = new StringBuilder().append(msg);
 		for (int i=0;i<data.length;i++) act.append(" ").append(data[i]);
 		sendToServer(act.toString());
 	}
-	public void sendToServer(String msg) {
+	private void sendToServer(String msg) {
 		int cnt = clientLog.size();
 		clientLog.add(cnt + " " + msg);
 		writeToServer(clientLog.get(cnt));

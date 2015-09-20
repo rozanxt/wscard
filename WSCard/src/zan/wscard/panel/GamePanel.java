@@ -71,6 +71,8 @@ public class GamePanel extends BasePanel {
 		}
 
 		TextureManager.loadTexture("CARDBACK", "res/img/card/cardback.jpg");
+		TextureManager.loadTexture("CARDFIELD", "res/img/card/cardfield.png");
+		TextureManager.loadTexture("CARDCLOCK", "res/img/card/cardclock.png");
 		for (int i=0;i<LHCards.size();i++) {
 			CardData c = LHCards.get(i);
 			TextureManager.loadTexture(c.id, c.image);

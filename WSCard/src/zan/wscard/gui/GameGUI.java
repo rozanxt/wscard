@@ -17,10 +17,8 @@ import zan.wscard.obj.StageField;
 import zan.wscard.obj.StockField;
 import zan.wscard.obj.WaitingRoomField;
 import zan.wscard.sys.GameClient;
-import zan.wscard.sys.PlayerAction;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLE_FAN;
 import static zan.wscard.sys.GameSystem.*;
-import static zan.wscard.obj.CardObject.*;
 import static zan.lib.input.InputManager.*;
 
 public class GameGUI {
@@ -42,7 +40,7 @@ public class GameGUI {
 	private CardObject heldCard = null;
 	private Vec2D heldOffset = new Vec2D(0.0, 0.0);
 
-	private ArrayList<PlayerAction> playerActions = new ArrayList<PlayerAction>();
+	private ArrayList<String> playerActions = new ArrayList<String>();
 
 	private VertexObject selected;
 
@@ -102,24 +100,17 @@ public class GameGUI {
 	// User Interface
 
 	private void onInit() {
-		if (isKeyPressed(IM_KEY_SPACE)) {
-			gameClient.sendToServer(MSG_READY);
-		}
+		if (isKeyPressed(IM_KEY_SPACE)) gameClient.actReady();
 	}
 
 	private void onFirstDraw() {
 		if (gameClient.isSubPhase(SP_START)) {
-			gameClient.sendToServer(MSG_REQUEST, REQ_DRAW, 5);
-			gameClient.setSubPhase(SP_FIRSTDRAW_DISCARD);
+			gameClient.actFirstDraw();
 		} else if (gameClient.isSubPhase(SP_FIRSTDRAW_DISCARD)) {
 			if (heldCard == null) {
 				if (isKeyPressed(IM_KEY_SPACE)) {
 					// Submits discarded cards in first draw
-					int redraw = playerActions.size();
-					gameClient.submitActions(playerActions);
-					if (redraw > 0) gameClient.sendToServer(MSG_REQUEST, REQ_DRAW, redraw);
-					else gameClient.sendToServer(MSG_ACTION, ACT_ENDTURN);
-					gameClient.setSubPhase(SP_END);
+					gameClient.actRedraw(playerActions);
 				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
 					checkDragFromHand();
 				}
@@ -131,7 +122,7 @@ public class GameGUI {
 						playerHand.removeCard(heldCard);
 						playerWaitingRoom.addCard(heldCard);
 						activeCards.remove(heldCard);
-						playerActions.add(new PlayerAction(ACT_DISCARDFROMHAND, heldCard.getCardID()));
+						playerActions.add(MSG_ACTION + " " + ACT_DISCARDFROMHAND + " " + heldCard.getCardID());
 					}
 					dropCard();
 				}
@@ -144,15 +135,11 @@ public class GameGUI {
 	}
 
 	private void onStandUpPhase() {
-		if (gameClient.isSubPhase(SP_START)) {
-			gameClient.actStandUp();
-		}
+		if (gameClient.isSubPhase(SP_START)) gameClient.actStandUp();
 	}
 
 	private void onDrawPhase() {
-		if (gameClient.isSubPhase(SP_START)) {
-			gameClient.actDraw();
-		}
+		if (gameClient.isSubPhase(SP_START)) gameClient.actDraw();
 	}
 
 	private void onClockPhase() {
@@ -160,7 +147,7 @@ public class GameGUI {
 			if (heldCard == null) {
 				if (isKeyPressed(IM_KEY_SPACE)) {
 					// Skips clocking
-					gameClient.sendPhase(GP_MAIN);
+					gameClient.actClock(CARD_NONE);
 				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
 					checkDragFromHand();
 				}
@@ -172,9 +159,7 @@ public class GameGUI {
 						playerHand.removeCard(heldCard);
 						playerClock.addCard(heldCard);
 						activeCards.remove(heldCard);
-						gameClient.sendToServer(MSG_ACTION, ACT_CLOCKFROMHAND, heldCard.getCardID());
-						gameClient.sendToServer(MSG_REQUEST, REQ_DRAW, 2);
-						gameClient.setSubPhase(SP_END);
+						gameClient.actClock(heldCard.getCardID());
 					}
 					dropCard();
 				}
@@ -188,8 +173,8 @@ public class GameGUI {
 				if (isKeyPressed(IM_KEY_SPACE)) {
 					// Ends main phase
 					for (int i=0;i<playerStages.length;i++) if (playerStages[i].getCard() != null) playerStages[i].getCard().setCardState(1);
-					gameClient.submitActions(playerActions);
-					gameClient.sendPhase(GP_ATTACK);
+					playerActions.add(MSG_ACTION + " " + ACT_MAIN_END);
+					gameClient.actMain(playerActions);
 				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
 					checkDragFromHand();
 					checkDragFromStage();
@@ -205,7 +190,7 @@ public class GameGUI {
 							if (sf.isInBound(mouseX, mouseY) && sf.getCard() == null) {
 								playerHand.removeCard(heldCard);
 								sf.setCard(heldCard);
-								playerActions.add(new PlayerAction(ACT_PLACEFROMHAND, heldCard.getCardID(), sf.getStageID()));
+								playerActions.add(MSG_ACTION + " " + ACT_PLACEFROMHAND + " " + heldCard.getCardID() + " " + sf.getStageID());
 								break;
 							}
 						}
@@ -218,7 +203,7 @@ public class GameGUI {
 								StageField pf = (StageField)previousField;
 								pf.setCard(sf.getCard());
 								sf.setCard(heldCard);
-								playerActions.add(new PlayerAction(ACT_SWAPONSTAGE, pf.getStageID(), sf.getStageID()));
+								playerActions.add(MSG_ACTION + " " + ACT_SWAPONSTAGE + " " + pf.getStageID() + " " + sf.getStageID());
 								any = true;
 								break;
 							}
@@ -230,7 +215,8 @@ public class GameGUI {
 							playerHand.addCard(heldCard);
 
 							for (int i=0;i<playerActions.size();i++) {
-								if (playerActions.get(i).type == ACT_PLACEFROMHAND && playerActions.get(i).actions[0] == heldCard.getCardID()) {
+								String[] action = playerActions.get(i).split(" ");
+								if (Utility.parseInt(action[1]) == ACT_PLACEFROMHAND && Utility.parseInt(action[2]) == heldCard.getCardID()) {
 									playerActions.remove(i);
 									break;
 								}
@@ -267,19 +253,19 @@ public class GameGUI {
 						// Submits frontal attack
 						selectedCard.setCardState(2);
 						selectedCard = null;
-						gameClient.submitAttack(ATK_FRONTAL, sid);
+						gameClient.actAttack(ATK_FRONTAL, sid);
 					} else if (isKeyPressed(IM_KEY_2)) {
 						// Submits side attack
 						selectedCard.setCardState(2);
 						selectedCard = null;
-						gameClient.submitAttack(ATK_SIDE, sid);
+						gameClient.actAttack(ATK_SIDE, sid);
 					}
 				} else {
 					if (isKeyPressed(IM_KEY_0)) {
 						// Submits direct attack
 						selectedCard.setCardState(2);
 						selectedCard = null;
-						gameClient.submitAttack(ATK_DIRECT, sid);
+						gameClient.actAttack(ATK_DIRECT, sid);
 					}
 				}
 			}
@@ -287,19 +273,21 @@ public class GameGUI {
 			if (isKeyPressed(IM_KEY_SPACE)) {
 				// Ends attack phase
 				selectedCard = null;
-				gameClient.sendPhase(GP_END);
+				gameClient.endAttack();
 			}
 		}
 	}
 
 	private void onEndPhase() {
-		if (gameClient.isSubPhase(SP_START)) {
-			gameClient.actCleanUp();
-		}
+		if (gameClient.isSubPhase(SP_START)) gameClient.actCleanUp();
+	}
+
+	private void onLevelUp() {
+		// TODO Level up
 	}
 
 	public void doUserInterface() {
-		if (isKeyPressed(IM_KEY_P)) gameClient.sendToServer(MSG_PING);
+		if (isKeyPressed(IM_KEY_P)) gameClient.actPing();
 
 		if (gameClient.isState(GS_INIT)) {
 			onInit();
@@ -323,6 +311,9 @@ public class GameGUI {
 					onEndPhase();
 				}
 			}
+
+			// TODO Level up
+
 		} else if (gameClient.isState(GS_END)) {
 			onEnd();
 		}
@@ -378,59 +369,59 @@ public class GameGUI {
 
 	// Action Events
 
-	private void doActionEvent(String[] tkns) {	// TODO TRIGGER, RESHUFFLE
-		if (tkns[0].contentEquals("WAIT")) {
-			int wait = Utility.parseInt(tkns[1]);
-			actionDelay = wait;
-		} else if (tkns[0].contentEquals("PHASE")) {
-			int phase = Utility.parseInt(tkns[1]);
-			gameClient.sendPhase(phase);
-		} else if (tkns[0].contentEquals("ENDTURN")) {
-			gameClient.sendToServer(MSG_ACTION, ACT_ENDTURN);
-		} else if (tkns[0].contentEquals("STANDUP")) {
+	private void doActionEvent(int[] tkns) {	// TODO TRIGGER, RESHUFFLE
+		if (tkns[0] == ACS_NONE) {
+			// NONE
+		} else if (tkns[0] == ACS_WAIT) {
+			actionDelay = tkns[1];
+		} else if (tkns[0] == ACS_ENDTURN) {
+			gameClient.endTurn();
+		} else if (tkns[0] == ACS_PHASE) {
+			gameClient.sendPhase(tkns[1]);
+		} else if (tkns[0] == ACS_SUBPHASE) {
+			gameClient.setSubPhase(tkns[1]);
+		} else if (tkns[0] == ACS_PL_NONE) {
+			// NONE
+		} else if (tkns[0] == ACS_PL_ENDTURN) {
+			// NONE
+		} else if (tkns[0] == ACS_PL_STANDUP) {
 			for (int i=0;i<playerStages.length;i++) {
 				if (playerStages[i].hasCard()) {
 					playerStages[i].getCard().setCardState(CS_STAND);
 				}
 			}
-		} else if (tkns[0].contentEquals("DRAW")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
+			actionDelay = 30;
+		} else if (tkns[0] == ACS_PL_DRAWTOHAND) {
+			CardObject card = new CardObject(tkns[1], gameClient.getPlayer().getCardData(tkns[1]));
 			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
 			playerHand.addCard(card);
 			activeCards.add(card);
 			actionDelay = 10;
-		} else if (tkns[0].contentEquals("RESHUFFLE")) {
-			playerWaitingRoom.clearWaitingRoom();
-			actionDelay = 50;
-		} else if (tkns[0].contentEquals("RESHUFFLECOST")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
-			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
-			playerClock.addCard(card);
-			actionDelay = 30;
-		} else if (tkns[0].contentEquals("TRIGGER")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
+		} else if (tkns[0] == ACS_PL_DISCARDFROMHAND) {
+			// NONE
+		} else if (tkns[0] == ACS_PL_CLOCKFROMHAND) {
+			// NONE
+		} else if (tkns[0] == ACS_PL_PLACEFROMHAND) {
+			// NONE
+		} else if (tkns[0] == ACS_PL_SWAPONSTAGE) {
+			// NONE
+		} else if (tkns[0] == ACS_PL_MAIN_END) {
+			// NONE
+		} else if (tkns[0] == ACS_PL_ATTACK_DECLARATION) {
+			// NONE
+		} else if (tkns[0] == ACS_PL_ATTACK_TRIGGER) {
+			CardObject card = new CardObject(tkns[1], gameClient.getPlayer().getCardData(tkns[1]));
 			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
 			playerStock.addCard(card);
 			actionDelay = 50;
-		} else if (tkns[0].contentEquals("DAMAGE")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject card = new CardObject(id, gameClient.getPlayer().getCardData(id));
+		} else if (tkns[0] == ACS_PL_ATTACK_DAMAGE) {
+			CardObject card = new CardObject(tkns[1], gameClient.getPlayer().getCardData(tkns[1]));
 			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
 			playerClock.addCard(card);
 			actionDelay = 20;
-		} else if (tkns[0].contentEquals("CANCEL")) {	// TODO
-			int cancel = Utility.parseInt(tkns[1]);
-			ArrayList<CardObject> cancelled = playerClock.removeCards(cancel);
-			for (int i=0;i<cancelled.size();i++) playerWaitingRoom.addCard(cancelled.get(i));
-			actionDelay = 50;
-		} else if (tkns[0].contentEquals("REVERSE")) {
-			int stage = Utility.parseInt(tkns[1]);
-			playerStages[stage].getCard().setCardState(CS_REVERSE);
-			actionDelay = 30;
-		} else if (tkns[0].contentEquals("CLEANUP")) {
+		} else if (tkns[0] == ACS_PL_ATTACK_BATTLE) {
+			// NONE
+		} else if (tkns[0] == ACS_PL_CLEANUP) {
 			for (int i=0;i<playerStages.length;i++) {
 				if (playerStages[i].hasCard()) {
 					if (playerStages[i].getCard().getCardState() == CS_REVERSE) {
@@ -441,87 +432,78 @@ public class GameGUI {
 				}
 			}
 			actionDelay = 30;
-		} else if (tkns[0].contentEquals("OPSTANDUP")) {
+		} else if (tkns[0] == ACS_PL_LEVELUP) {
+			// TODO
+		} else if (tkns[0] == ACS_PL_RESHUFFLE) {
+			// TODO
+		} else if (tkns[0] == ACS_PL_ATTACK_CANCEL) {
+			ArrayList<CardObject> cancelled = playerClock.removeCards(tkns[1]);
+			for (int i=0;i<cancelled.size();i++) playerWaitingRoom.addCard(cancelled.get(i));
+			actionDelay = 50;
+		} else if (tkns[0] == ACS_PL_REVERSE) {
+			playerStages[tkns[1]].getCard().setCardState(CS_REVERSE);
+			actionDelay = 30;
+		} else if (tkns[0] == ACS_OP_NONE) {
+			// NONE
+		} else if (tkns[0] == ACS_OP_ENDTURN) {
+			// NONE
+		} else if (tkns[0] == ACS_OP_STANDUP) {
 			for (int i=0;i<opponentStages.length;i++) {
 				if (opponentStages[i].hasCard()) {
 					opponentStages[i].getCard().setCardState(CS_STAND);
 				}
 			}
 			actionDelay = 50;
-		} else if (tkns[0].contentEquals("OPDRAW")) {
+		} else if (tkns[0] == ACS_OP_DRAWTOHAND) {
 			CardObject card = new CardObject();
 			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
 			opponentHand.addCard(card);
 			actionDelay = 10;
-		} else if (tkns[0].contentEquals("OPRESHUFFLE")) {
-			opponentWaitingRoom.clearWaitingRoom();
-			actionDelay = 50;
-		} else if (tkns[0].contentEquals("OPRESHUFFLECOST")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
-			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
-			opponentClock.addCard(card);
-			actionDelay = 30;
-		} else if (tkns[0].contentEquals("OPDISCARD")) {
-			int id = Utility.parseInt(tkns[1]);
+		} else if (tkns[0] == ACS_OP_DISCARDFROMHAND) {
 			CardObject hand = opponentHand.getCard(0);
 			opponentHand.removeCard(hand);
-			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
+			CardObject card = new CardObject(tkns[1], gameClient.getOpponent().getCardData(tkns[1]));
 			card.setPos(hand.getAnchorX(), hand.getAnchorY());
 			opponentWaitingRoom.addCard(card);
 			actionDelay = 20;
-		} else if (tkns[0].contentEquals("OPPLACE")) {
-			int id = Utility.parseInt(tkns[1]);
-			int stage = Utility.parseInt(tkns[2]);
+		} else if (tkns[0] == ACS_OP_CLOCKFROMHAND) {
 			CardObject hand = opponentHand.getCard(0);
 			opponentHand.removeCard(hand);
-			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
-			card.setPos(hand.getAnchorX(), hand.getAnchorY());
-			opponentStages[stage].setCard(card);
-			activeCards.add(card);
-			actionDelay = 30;
-		} else if (tkns[0].contentEquals("OPMOVE")) {
-			int start = Utility.parseInt(tkns[1]);
-			int end = Utility.parseInt(tkns[2]);
-			CardObject temp = opponentStages[start].getCard();
-			opponentStages[start].setCard(opponentStages[end].getCard());
-			opponentStages[end].setCard(temp);
-			actionDelay = 30;
-		} else if (tkns[0].contentEquals("OPCLOCK")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject hand = opponentHand.getCard(0);
-			opponentHand.removeCard(hand);
-			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
+			CardObject card = new CardObject(tkns[1], gameClient.getOpponent().getCardData(tkns[1]));
 			card.setPos(hand.getAnchorX(), hand.getAnchorY());
 			opponentClock.addCard(card);
 			actionDelay = 20;
-		} else if (tkns[0].contentEquals("OPATTACK")) {
-			// TODO int type = Utility.parseInt(tkns[1]);
-			int stage = Utility.parseInt(tkns[2]);
-			opponentStages[stage].getCard().setCardState(CS_REST);
+		} else if (tkns[0] == ACS_OP_PLACEFROMHAND) {
+			CardObject hand = opponentHand.getCard(0);
+			opponentHand.removeCard(hand);
+			CardObject card = new CardObject(tkns[1], gameClient.getOpponent().getCardData(tkns[1]));
+			card.setPos(hand.getAnchorX(), hand.getAnchorY());
+			opponentStages[tkns[2]].setCard(card);
+			activeCards.add(card);
+			actionDelay = 30;
+		} else if (tkns[0] == ACS_OP_SWAPONSTAGE) {
+			CardObject temp = opponentStages[tkns[1]].getCard();
+			opponentStages[tkns[1]].setCard(opponentStages[tkns[2]].getCard());
+			opponentStages[tkns[2]].setCard(temp);
+			actionDelay = 30;
+		} else if (tkns[0] == ACS_OP_MAIN_END) {
+			// NONE
+		} else if (tkns[0] == ACS_OP_ATTACK_DECLARATION) {
+			opponentStages[tkns[2]].getCard().setCardState(CS_REST);
 			actionDelay = 40;
-		} else if (tkns[0].contentEquals("OPTRIGGER")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
+		} else if (tkns[0] == ACS_OP_ATTACK_TRIGGER) {
+			CardObject card = new CardObject(tkns[1], gameClient.getOpponent().getCardData(tkns[1]));
 			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
 			opponentStock.addCard(card);
 			actionDelay = 50;
-		} else if (tkns[0].contentEquals("OPDAMAGE")) {
-			int id = Utility.parseInt(tkns[1]);
-			CardObject card = new CardObject(id, gameClient.getOpponent().getCardData(id));
+		} else if (tkns[0] == ACS_OP_ATTACK_DAMAGE) {
+			CardObject card = new CardObject(tkns[1], gameClient.getOpponent().getCardData(tkns[1]));
 			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
 			opponentClock.addCard(card);
 			actionDelay = 20;
-		} else if (tkns[0].contentEquals("OPCANCEL")) {
-			int cancel = Utility.parseInt(tkns[1]);
-			ArrayList<CardObject> cancelled = opponentClock.removeCards(cancel);
-			for (int i=0;i<cancelled.size();i++) opponentWaitingRoom.addCard(cancelled.get(i));
-			actionDelay = 50;
-		} else if (tkns[0].contentEquals("OPREVERSE")) {
-			int stage = Utility.parseInt(tkns[1]);
-			opponentStages[stage].getCard().setCardState(CS_REVERSE);
-			actionDelay = 30;
-		} else if (tkns[0].contentEquals("OPCLEANUP")) {
+		} else if (tkns[0] == ACS_OP_ATTACK_BATTLE) {
+			// NONE
+		} else if (tkns[0] == ACS_OP_CLEANUP) {
 			for (int i=0;i<opponentStages.length;i++) {
 				if (opponentStages[i].hasCard()) {
 					if (opponentStages[i].getCard().getCardState() == CS_REVERSE) {
@@ -532,29 +514,29 @@ public class GameGUI {
 				}
 			}
 			actionDelay = 30;
-		} else if (tkns[0].contentEquals("OPLEVELUP")) {
-			int id = Utility.parseInt(tkns[1]);
-			for (int i=0;i<7;i++) {
-				if (opponentClock.getCard(i).getCardID() == id) {
-					opponentLevel.addCard(opponentClock.getCard(i));
-				} else {
-					opponentWaitingRoom.addCard(opponentClock.getCard(i));
-				}
-			}
-			for (int i=0;i<7;i++) {
-				opponentClock.removeCard(opponentClock.getCard(0));
-			}
-		} else if (tkns[0].contentEquals("WINNER")) {
-			winner = Utility.parseInt(tkns[1]);
-		} else if (tkns[0].contentEquals("")) {
+		} else if (tkns[0] == ACS_OP_LEVELUP) {
 			// TODO
+		} else if (tkns[0] == ACS_OP_RESHUFFLE) {
+			// TODO
+		} else if (tkns[0] == ACS_OP_ATTACK_CANCEL) {
+			ArrayList<CardObject> cancelled = opponentClock.removeCards(tkns[1]);
+			for (int i=0;i<cancelled.size();i++) opponentWaitingRoom.addCard(cancelled.get(i));
+			actionDelay = 50;
+		} else if (tkns[0] == ACS_OP_REVERSE) {
+			opponentStages[tkns[1]].getCard().setCardState(CS_REVERSE);
+			actionDelay = 30;
 		}
 	}
 
 	public void doActionEvents() {
 		if (actionDelay <= 0) {
 			String action = gameClient.getAction();
-			if (action != null) doActionEvent(action.split(" "));
+			if (action != null) {
+				String[] data = action.split(" ");
+				int[] tkns = new int[data.length];
+				for (int i=0;i<data.length;i++) tkns[i] = Utility.parseInt(data[i]);
+				doActionEvent(tkns);
+			}
 		} else {
 			actionDelay--;
 		}
@@ -689,6 +671,7 @@ public class GameGUI {
 			else if (gameClient.isPhase(GP_MAIN)) TextManager.renderText(sp, "Main Phase", "defont");
 			else if (gameClient.isPhase(GP_ATTACK)) TextManager.renderText(sp, "Attack Phase", "defont");
 			else if (gameClient.isPhase(GP_END)) TextManager.renderText(sp, "End Phase", "defont");
+			else if (gameClient.isPhase(GP_LEVELUP)) TextManager.renderText(sp, "Level Up!", "defont");
 			sp.popMatrix();
 		} else if (gameClient.isState(GS_END) && winner != PL_NONE) {
 			sp.pushMatrix();

@@ -4,10 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import zan.wscard.card.CardData;
+import static zan.wscard.sys.GameSystem.*;
 
 public class Player {
-
-	public static final int NO_CARD = -1;
 
 	private PlayerInfo playerInfo = null;
 
@@ -17,10 +16,12 @@ public class Player {
 	private ArrayList<Integer> playerLevel = new ArrayList<Integer>();
 	private ArrayList<Integer> playerStock = new ArrayList<Integer>();
 	private ArrayList<Integer> playerHand = new ArrayList<Integer>();
-	private int[] playerStages = new int[5];
+	private int[] playerStages = new int[NUM_STAGES];
+	private int[] playerCardState = new int[NUM_STAGES];
 
 	public Player() {
-		for (int i=0;i<5;i++) playerStages[i] = NO_CARD;
+		for (int i=0;i<NUM_STAGES;i++) playerStages[i] = CARD_NONE;
+		for (int i=0;i<NUM_STAGES;i++) playerCardState[i] = CS_NONE;
 	}
 
 	public void setInfo(PlayerInfo info) {
@@ -30,7 +31,7 @@ public class Player {
 
 	public void initDeck() {
 		playerDeck.clear();
-		for (int i=0;i<50;i++) playerDeck.add(i);
+		for (int i=0;i<NUM_DECKCARDS;i++) playerDeck.add(i);
 		shuffleDeck();
 	}
 
@@ -64,6 +65,10 @@ public class Player {
 		playerStock.add(card);
 	}
 
+	public void addToLevel(int card) {
+		playerLevel.add(card);
+	}
+
 	public void placeOnStage(int card, int stage) {
 		playerStages[stage] = card;
 	}
@@ -72,6 +77,36 @@ public class Player {
 		int card = playerStages[stage1];
 		playerStages[stage1] = playerStages[stage2];
 		playerStages[stage2] = card;
+	}
+
+	public void setCardState(int stage, int state) {
+		playerCardState[stage] = state;
+	}
+
+	public void doStandUp() {
+		for (int i=0;i<NUM_STAGES;i++) {
+			if (playerStages[i] != CARD_NONE && playerCardState[i] == CS_REST) {
+				playerCardState[i] = CS_STAND;
+			}
+		}
+	}
+
+	public void doCleanUp() {
+		for (int i=0;i<NUM_STAGES;i++) {
+			if (playerStages[i] != CARD_NONE && playerCardState[i] == CS_REVERSE) {
+				addToWaitingRoom(playerStages[i]);
+				playerStages[i] = CARD_NONE;
+				playerCardState[i] = CS_NONE;
+			}
+		}
+	}
+
+	public void doLevelUp(int card) {
+		for (int i=0;i<7;i++) {
+			int removed = playerClock.remove(0);
+			if (removed == card) playerLevel.add(removed);
+			else playerWaitingRoom.add(removed);
+		}
 	}
 
 	public boolean removeFromHand(int card) {
@@ -83,6 +118,8 @@ public class Player {
 		}
 		return false;
 	}
+
+	public boolean readyForLevelUp() {return (playerClock.size() >= 7);}
 
 	public int getHandCard(int hand) {return playerHand.get(hand);}
 	public int getStageCard(int stage) {return playerStages[stage];}

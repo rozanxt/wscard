@@ -1,30 +1,22 @@
 package zan.wscard.obj;
 
-import static org.lwjgl.opengl.GL11.GL_LINE_LOOP;
-
 import java.util.ArrayList;
 
-import zan.lib.gfx.obj.VertexObject;
+import zan.lib.gfx.obj.SpriteObject;
 import zan.lib.gfx.shader.DefaultShader;
+import zan.lib.gfx.texture.TextureManager;
 
 public class LevelField extends CardField {
 
 	protected ArrayList<CardObject> levelCards;
 
-	protected VertexObject field;
+	protected SpriteObject field;
 
 	public LevelField(double x, double y) {
 		super(x, y);
 		levelCards = new ArrayList<CardObject>();
 
-		final int[] ind = {0, 1, 2, 3};
-		final float[] ver = {
-			-0.5f*(float)CardObject.cardRatio, -0.5f,
-			0.5f*(float)CardObject.cardRatio, -0.5f,
-			0.5f*(float)CardObject.cardRatio, 0.5f,
-			-0.5f*(float)CardObject.cardRatio, 0.5f,
-		};
-		field = new VertexObject(ver, ind, 2, 0, 0, 0, GL_LINE_LOOP);
+		field = new SpriteObject(TextureManager.getTexture("CARDFIELD"));
 	}
 
 	public void destroy() {
@@ -77,7 +69,7 @@ public class LevelField extends CardField {
 
 		sp.pushMatrix();
 		sp.translate(posX, posY, 0.0);
-		sp.scale(size, size, 1.0);
+		sp.scale(size+2.0, size+2.0, 1.0);
 		sp.applyModelMatrix();
 		sp.popMatrix();
 

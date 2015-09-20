@@ -19,10 +19,12 @@ public abstract class GameSystem {
 	public static final int REQ_NONE = 0;
 	public static final int REQ_DRAW = 1;
 	public static final int REQ_DEALDAMAGE = 2;
+	public static final int REQ_LEVELUP = 3;
 
 	public static final int ANS_NONE = 0;
 	public static final int ANS_DRAW = 1;
 	public static final int ANS_DEALDAMAGE = 2;
+	public static final int ANS_LEVELUP = 3;
 
 	public static final int ACT_NONE = 0;
 	public static final int ACT_ENDTURN = 1;
@@ -32,11 +34,58 @@ public abstract class GameSystem {
 	public static final int ACT_CLOCKFROMHAND = 5;
 	public static final int ACT_PLACEFROMHAND = 6;
 	public static final int ACT_SWAPONSTAGE = 7;
-	public static final int ACT_ATTACK_DECLARATION = 8;
-	public static final int ACT_ATTACK_TRIGGER = 9;
-	public static final int ACT_ATTACK_DAMAGE = 10;
-	public static final int ACT_ATTACK_BATTLE = 11;
-	public static final int ACT_CLEANUP = 12;
+	public static final int ACT_MAIN_END = 8;
+	public static final int ACT_ATTACK_DECLARATION = 9;
+	public static final int ACT_ATTACK_TRIGGER = 10;
+	public static final int ACT_ATTACK_DAMAGE = 11;
+	public static final int ACT_ATTACK_BATTLE = 12;
+	public static final int ACT_CLEANUP = 13;
+	public static final int ACT_LEVELUP = 14;
+	public static final int ACT_RESHUFFLE = 15;
+
+	public static final int ACS_NONE = 0;
+	public static final int ACS_WAIT = 1;
+	public static final int ACS_ENDTURN = 2;
+	public static final int ACS_PHASE = 3;
+	public static final int ACS_SUBPHASE = 4;
+
+	public static final int ACS_PL_NONE = 100;
+	public static final int ACS_PL_ENDTURN = 101;
+	public static final int ACS_PL_STANDUP = 102;
+	public static final int ACS_PL_DRAWTOHAND = 103;
+	public static final int ACS_PL_DISCARDFROMHAND = 104;
+	public static final int ACS_PL_CLOCKFROMHAND = 105;
+	public static final int ACS_PL_PLACEFROMHAND = 106;
+	public static final int ACS_PL_SWAPONSTAGE = 107;
+	public static final int ACS_PL_MAIN_END = 108;
+	public static final int ACS_PL_ATTACK_DECLARATION = 109;
+	public static final int ACS_PL_ATTACK_TRIGGER = 110;
+	public static final int ACS_PL_ATTACK_DAMAGE = 111;
+	public static final int ACS_PL_ATTACK_BATTLE = 112;
+	public static final int ACS_PL_CLEANUP = 113;
+	public static final int ACS_PL_LEVELUP = 114;
+	public static final int ACS_PL_RESHUFFLE = 115;
+	public static final int ACS_PL_ATTACK_CANCEL = 151;
+	public static final int ACS_PL_REVERSE = 152;
+
+	public static final int ACS_OP_NONE = 200;
+	public static final int ACS_OP_ENDTURN = 201;
+	public static final int ACS_OP_STANDUP = 202;
+	public static final int ACS_OP_DRAWTOHAND = 203;
+	public static final int ACS_OP_DISCARDFROMHAND = 204;
+	public static final int ACS_OP_CLOCKFROMHAND = 205;
+	public static final int ACS_OP_PLACEFROMHAND = 206;
+	public static final int ACS_OP_SWAPONSTAGE = 207;
+	public static final int ACS_OP_MAIN_END = 208;
+	public static final int ACS_OP_ATTACK_DECLARATION = 209;
+	public static final int ACS_OP_ATTACK_TRIGGER = 210;
+	public static final int ACS_OP_ATTACK_DAMAGE = 211;
+	public static final int ACS_OP_ATTACK_BATTLE = 212;
+	public static final int ACS_OP_CLEANUP = 213;
+	public static final int ACS_OP_LEVELUP = 214;
+	public static final int ACS_OP_RESHUFFLE = 215;
+	public static final int ACS_OP_ATTACK_CANCEL = 251;
+	public static final int ACS_OP_REVERSE = 252;
 
 	// GAME ENUM
 
@@ -52,6 +101,7 @@ public abstract class GameSystem {
 	public static final int GP_MAIN = 4;
 	public static final int GP_ATTACK = 5;
 	public static final int GP_END = 6;
+	public static final int GP_LEVELUP = 7;
 
 	public static final int PL_NONE = -1;
 	public static final int PL_A = 0;
@@ -61,11 +111,14 @@ public abstract class GameSystem {
 	public static final int SP_END = 0;
 	public static final int SP_START = 1;
 
-	public static final int SP_FIRSTDRAW_DISCARD = 2;
+	public static final int SP_FIRSTDRAW_DRAW = 2;
+	public static final int SP_FIRSTDRAW_DISCARD = 3;
 
 	public static final int SP_ATTACK_TRIGGER = 2;
-	public static final int SP_ATTACK_DEALDAMAGE = 3;
+	public static final int SP_ATTACK_DAMAGE = 3;
 	public static final int SP_ATTACK_BATTLE = 4;
+
+	public static final int SP_LEVELUP = 2;
 
 	public static final int ATK_NONE = 0;
 	public static final int ATK_DIRECT = 1;
@@ -77,12 +130,20 @@ public abstract class GameSystem {
 	public static final int BTL_DEFENDER = 2;
 	public static final int BTL_TIE = 3;
 
+	public static final int CS_NONE = 0;
+	public static final int CS_STAND = 1;
+	public static final int CS_REST = 2;
+	public static final int CS_REVERSE = 3;
+
 	public static final int CARD_NONE = -1;
 	public static final int CARD_CHARA = 0;
 	public static final int CARD_CLIMAX = 1;
 	public static final int CARD_EVENT = 2;
 
 	public static final int STAGE_NONE = -1;
+
+	public static final int NUM_DECKCARDS = 50;
+	public static final int NUM_STAGES = 5;
 
 	protected int gameState = GS_INIT;
 	protected int gamePhase = GP_WAIT;

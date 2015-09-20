@@ -4,17 +4,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import zan.lib.util.Utility;
-import static zan.wscard.sys.Player.NO_CARD;
 
 public abstract class GameServer extends GameSystem {
-
-	private Player playerA = new Player();
-	private Player playerB = new Player();
 
 	private ArrayList<String> serverLog = new ArrayList<String>();
 	private int[] logCount = new int[PL_NUM];
 	private boolean[] waitForVerification = new boolean[PL_NUM];
 	private boolean[] ready = new boolean[PL_NUM];
+
+	private Player playerA = new Player();
+	private Player playerB = new Player();
+
+	private AttackInfo attackInfo = new AttackInfo();
 
 	public GameServer() {
 		logCount[PL_A] = 0;
@@ -30,43 +31,32 @@ public abstract class GameServer extends GameSystem {
 		playerB.setInfo(infoB);
 	}
 
-	private void sendState(int state) {
-		setState(state);
-		sendToAllClients(MSG_STATE, gameState);
-	}
-	private void sendPhase(int phase) {
-		setPhase(phase);
-		sendToAllClients(MSG_PHASE, gamePhase);
-	}
-
 	private void doChangeTurn() {
 		if (isTurn(PL_A)) setTurn(PL_B);
 		else if (isTurn(PL_B)) setTurn(PL_A);
 		else setTurn(PL_A);	// TODO Randomize first turn
 		sendToAllClients(MSG_TURN, playerTurn);
 	}
-
 	private void doDrawCards(int cid, int num) {
 		Player player = getPlayer(cid);
 		ArrayList<Integer> cards = new ArrayList<Integer>();
 		for (int i=0;i<num;i++) {
 			int drawn = player.drawCard();
 			cards.add(drawn);
-			if (drawn == NO_CARD) {
+			if (drawn == CARD_NONE) {
 				player.reshuffleDeck();
 				cards.add(player.drawCard());
 			}
 		}
 		sendArrayListToClient(cid, MSG_ANSWER, ANS_DRAW, cards);
 	}
-
 	private void doDealDamage(int cid, int num) {
 		Player opponent = getOtherPlayer(cid);
 		ArrayList<Integer> cards = new ArrayList<Integer>();
 		for (int i=0;i<num;i++) {
 			int drawn = opponent.drawCard();
 			cards.add(drawn);
-			if (drawn == NO_CARD) {
+			if (drawn == CARD_NONE) {
 				opponent.reshuffleDeck();
 				drawn = opponent.drawCard();
 				cards.add(drawn);
@@ -75,48 +65,85 @@ public abstract class GameServer extends GameSystem {
 		}
 		sendArrayListToClient(cid, MSG_ANSWER, ANS_DEALDAMAGE, cards);
 	}
-
-	private void doInformAction(int cid, int type, int[] actions) {
+	private void doLevelUp(int cid) {
+		// TODO
+		sendToAllClients(MSG_ANSWER, ANS_LEVELUP);
+	}
+	private void doInformAction(int cid, int info, int[] content) {	// TODO
 		Player player = getPlayer(cid);
 		Player opponent = getOtherPlayer(cid);
 
-		if (type == ACT_STANDUP) {
-			// TODO Player card state CS_STAND
-		} else if (type == ACT_DRAWTOHAND) {
-			for (int i=0;i<actions.length;i++) {
-				if (actions[i] != CARD_NONE) {
-					player.addToHand(actions[i]);
-					actions[i] = 0;
+		if (info == ACT_NONE) {
+			// NONE
+		} else if (info == ACT_ENDTURN) {
+			// After informing action
+		} else if (info == ACT_STANDUP) {
+			player.doStandUp();
+		} else if (info == ACT_DRAWTOHAND) {
+			for (int i=0;i<content.length;i++) {
+				if (content[i] != CARD_NONE) {
+					player.addToHand(content[i]);
+					content[i] = 0;
 				}
 			}
-		} else if (type == ACT_DISCARDFROMHAND) {
-			player.removeFromHand(actions[0]);
-			player.addToWaitingRoom(actions[0]);
-		} else if (type == ACT_CLOCKFROMHAND) {
-			player.removeFromHand(actions[0]);
-			player.addToClock(actions[0]);
-		} else if (type == ACT_PLACEFROMHAND) {
-			player.removeFromHand(actions[0]);
-			player.placeOnStage(actions[0], actions[1]);
-		} else if (type == ACT_SWAPONSTAGE) {
-			player.swapOnStage(actions[0], actions[1]);
-		} else if (type == ACT_ATTACK_DECLARATION) {
-			// TODO Player card state CS_REST
-		} else if (type == ACT_ATTACK_TRIGGER) {
-			player.addToStock(actions[0]);
-		} else if (type == ACT_ATTACK_DAMAGE) {
-			for (int i=0;i<actions.length;i++) {
-				if (actions[i] != CARD_NONE) opponent.addToClock(actions[i]);
+		} else if (info == ACT_DISCARDFROMHAND) {
+			player.removeFromHand(content[0]);
+			player.addToWaitingRoom(content[0]);
+		} else if (info == ACT_CLOCKFROMHAND) {
+			player.removeFromHand(content[0]);
+			player.addToClock(content[0]);
+		} else if (info == ACT_PLACEFROMHAND) {
+			player.removeFromHand(content[0]);
+			player.placeOnStage(content[0], content[1]);
+		} else if (info == ACT_SWAPONSTAGE) {
+			player.swapOnStage(content[0], content[1]);
+		} else if (info == ACT_MAIN_END) {
+			// NONE
+		} else if (info == ACT_ATTACK_DECLARATION) {
+			attackInfo.clear();
+			attackInfo.setAttack(player, opponent);
+			attackInfo.setType(content[0]);
+			attackInfo.setStage(content[1]);
+			player.setCardState(content[1], CS_REST);
+		} else if (info == ACT_ATTACK_TRIGGER) {
+			attackInfo.setTrigger(content[0]);
+			player.addToStock(content[0]);
+		} else if (info == ACT_ATTACK_DAMAGE) {
+			if (content.length > 0) {
+				if (opponent.getCardData(content[content.length-1]).type == CARD_CLIMAX) {
+					for (int i=0;i<content.length;i++) {
+						if (content[i] != CARD_NONE) opponent.addToWaitingRoom(content[i]);
+					}
+				} else {
+					for (int i=0;i<content.length;i++) {
+						if (content[i] != CARD_NONE) opponent.addToClock(content[i]);
+					}
+				}
+			} else {
+				// TODO No damage
 			}
-		} else if (type == ACT_CLEANUP) {
-			// TODO Player card state CS_REVERSE to Waiting Room
+		} else if (info == ACT_ATTACK_BATTLE) {
+			if (content[0] == BTL_ATTACKER) {
+				opponent.setCardState(attackInfo.getDefenderStage(), CS_REVERSE);
+			} else if (content[0] == BTL_DEFENDER) {
+				player.setCardState(attackInfo.getAttackerStage(), CS_REVERSE);
+			} else if (content[0] == BTL_TIE) {
+				opponent.setCardState(attackInfo.getDefenderStage(), CS_REVERSE);
+				player.setCardState(attackInfo.getAttackerStage(), CS_REVERSE);
+			}
+			attackInfo.clear();
+		} else if (info == ACT_CLEANUP) {
+			opponent.doCleanUp();
+			player.doCleanUp();
+		} else if (info == ACT_LEVELUP) {
+			player.doLevelUp(content[0]);
 		}
 
-		StringBuilder m = new StringBuilder().append(MSG_INFO).append(" ").append(cid).append(" ").append(type);
-		for (int i=0;i<actions.length;i++) m.append(" ").append(actions[i]);
+		StringBuilder m = new StringBuilder().append(MSG_INFO).append(" ").append(cid).append(" ").append(info);
+		for (int i=0;i<content.length;i++) m.append(" ").append(content[i]);
 		sendToAllClients(m.toString());
 
-		if (type == ACT_ENDTURN) {
+		if (info == ACT_ENDTURN) {
 			if (isState(GS_FIRSTDRAW)) {
 				ready[cid] = true;
 				if (ready[PL_A] && ready[PL_B]) {
@@ -155,6 +182,7 @@ public abstract class GameServer extends GameSystem {
 			} else if (tkns[0] == MSG_REQUEST) {
 				if (tkns[1] == REQ_DRAW) doDrawCards(cid, tkns[2]);
 				else if (tkns[1] == REQ_DEALDAMAGE) doDealDamage(cid, tkns[2]);
+				else if (tkns[1] == REQ_LEVELUP) doLevelUp(cid);
 			} else if (tkns[0] == MSG_ACTION) {
 				doInformAction(cid, tkns[1], Arrays.copyOfRange(tkns, 2, tkns.length));
 			}
@@ -201,29 +229,24 @@ public abstract class GameServer extends GameSystem {
 		return null;
 	}
 	public Player getOtherPlayer(int cid) {
-		return getPlayer((cid == PL_A)?PL_B:PL_A);
+		if (cid == PL_A) return playerB;
+		else if (cid == PL_B) return playerA;
+		return null;
+	}
+
+	private void sendState(int state) {
+		setState(state);
+		sendToAllClients(MSG_STATE, gameState);
+	}
+	private void sendPhase(int phase) {
+		setPhase(phase);
+		sendToAllClients(MSG_PHASE, gamePhase);
 	}
 
 	private void sendArrayListToClient(int cid, int msg, int type, ArrayList<Integer> data) {
 		StringBuilder m = new StringBuilder().append(msg).append(" ").append(type);
 		for (int i=0;i<data.size();i++) m.append(" ").append(data.get(i));
 		sendToClient(cid, m.toString());
-	}
-	private void sendArrayListToAllClients(int msg, int type, ArrayList<Integer> data) {
-		StringBuilder m = new StringBuilder().append(msg).append(" ").append(type);
-		for (int i=0;i<data.size();i++) m.append(" ").append(data.get(i));
-		sendToAllClients(m.toString());
-	}
-
-	private void sendArrayToClient(int cid, int msg, int type, int[] data) {
-		StringBuilder m = new StringBuilder().append(msg).append(" ").append(type);
-		for (int i=0;i<data.length;i++) m.append(" ").append(data[i]);
-		sendToClient(cid, m.toString());
-	}
-	private void sendArrayToAllClients(int msg, int type, int[] data) {
-		StringBuilder m = new StringBuilder().append(msg).append(" ").append(type);
-		for (int i=0;i<data.length;i++) m.append(" ").append(data[i]);
-		sendToAllClients(m.toString());
 	}
 
 	private void sendToClient(int cid, int msg, int... data) {
