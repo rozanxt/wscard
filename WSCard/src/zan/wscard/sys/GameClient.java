@@ -18,6 +18,7 @@ public abstract class GameClient extends GameSystem {
 	private Player opponent = new Player();
 
 	private int subPhase = SP_END;
+	private int storedSubPhase = SP_WAIT;
 
 	private AttackInfo attackInfo = new AttackInfo();
 	private ArrayList<String> actionStack = new ArrayList<String>();
@@ -102,9 +103,21 @@ public abstract class GameClient extends GameSystem {
 		stackAction(ACS_ENDTURN);
 		endPhase();
 	}
+	public void actLevelUp(int card) {
+		sendToServer(MSG_ACTION, ACT_LEVELUP, card);
+		setSubPhase(SP_WAIT);
+	}
 
 	public void sendPhase(int phase) {
 		sendToServer(MSG_PHASE, phase);
+	}
+	public void storeSubPhase(int phase) {	// TODO
+		if (subPhase != SP_WAIT && subPhase != SP_LEVELUP) storedSubPhase = subPhase;
+		setSubPhase(phase);
+	}
+	public void restoreSubPhase() {
+		setSubPhase(storedSubPhase);
+		storedSubPhase = SP_WAIT;
 	}
 
 	private void syncState(int state) {
@@ -116,8 +129,13 @@ public abstract class GameClient extends GameSystem {
 	private void syncPhase(int phase) {
 		if (!isPhase(phase)) {
 			setPhase(phase);
-			if (isPhase(GP_ENCORE)) startPhase();
-			else if (isInTurn()) startPhase();
+			if (isPhase(GP_ENCORE)) {
+				if (storedSubPhase != SP_WAIT) storedSubPhase = SP_START;
+				else startPhase();
+			} else if (isInTurn()) {
+				if (storedSubPhase != SP_WAIT) storedSubPhase = SP_START;
+				else startPhase();
+			}
 		}
 	}
 	private void syncTurn(int turn) {
@@ -185,8 +203,6 @@ public abstract class GameClient extends GameSystem {
 					setSubPhase(SP_ATTACK_BATTLE);
 					doBattle();
 				}
-			} else if (type == ANS_LEVELUP) {
-				// TODO
 			}
 		}
 	}
@@ -272,7 +288,7 @@ public abstract class GameClient extends GameSystem {
 			}
 			attackInfo.clear();
 			stackAction(ACS_SUBPHASE, SP_START);
-		} else if (info == ACT_ENCORE) {
+		} else if (info == ACT_ENCORE) {	// TODO Separate messages pay stock and encore
 			for (int i=0;i<content.length;i++) {
 				player.payStock(3);
 				player.setCardState(content[i], CS_REST);
@@ -294,6 +310,17 @@ public abstract class GameClient extends GameSystem {
 		} else if (info == ACT_LEVELUP) {
 			player.doLevelUp(content[0]);
 			stackAction(ACS_PL_LEVELUP, content[0]);
+			if (!player.readyForLevelUp() && !opponent.readyForLevelUp()) {
+				stackAction(ACS_RESTORESUBPHASE);
+			}
+		}
+
+		if (!isSubPhase(SP_LEVELUP)) {
+			if (player.readyForLevelUp()) {
+				stackAction(ACS_STORESUBPHASE, SP_LEVELUP);
+			} else if (opponent.readyForLevelUp()) {
+				stackAction(ACS_STORESUBPHASE, SP_WAIT);
+			}
 		}
 	}
 	private void processOpponentInfo(int info, int[] content) {
@@ -400,12 +427,22 @@ public abstract class GameClient extends GameSystem {
 					ready[PL_A] = false;
 					ready[PL_B] = false;
 					stackAction(ACS_PHASE, GP_END);
-					System.out.println("ASKNAS");
 				}
 			}
 		} else if (info == ACT_LEVELUP) {
 			opponent.doLevelUp(content[0]);
 			stackAction(ACS_OP_LEVELUP, content[0]);
+			if (!player.readyForLevelUp() && !opponent.readyForLevelUp()) {
+				stackAction(ACS_RESTORESUBPHASE);
+			}
+		}
+
+		if (!isSubPhase(SP_LEVELUP)) {
+			if (player.readyForLevelUp()) {
+				stackAction(ACS_STORESUBPHASE, SP_LEVELUP);
+			} else if (opponent.readyForLevelUp()) {
+				stackAction(ACS_STORESUBPHASE, SP_WAIT);
+			}
 		}
 	}
 	private void processMessage(int[] tkns) {

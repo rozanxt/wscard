@@ -19,12 +19,10 @@ public abstract class GameSystem {
 	public static final int REQ_NONE = 0;
 	public static final int REQ_DRAW = 1;
 	public static final int REQ_DEALDAMAGE = 2;
-	public static final int REQ_LEVELUP = 3;
 
 	public static final int ANS_NONE = 0;
 	public static final int ANS_DRAW = 1;
 	public static final int ANS_DEALDAMAGE = 2;
-	public static final int ANS_LEVELUP = 3;
 
 	public static final int ACT_NONE = 0;
 	public static final int ACT_ENDTURN = 1;
@@ -49,6 +47,8 @@ public abstract class GameSystem {
 	public static final int ACS_ENDTURN = 2;
 	public static final int ACS_PHASE = 3;
 	public static final int ACS_SUBPHASE = 4;
+	public static final int ACS_STORESUBPHASE = 5;
+	public static final int ACS_RESTORESUBPHASE = 6;
 
 	public static final int ACS_PL_NONE = 100;
 	public static final int ACS_PL_ENDTURN = 101;
@@ -107,7 +107,6 @@ public abstract class GameSystem {
 	public static final int GP_ATTACK = 5;
 	public static final int GP_ENCORE = 6;
 	public static final int GP_END = 7;
-	public static final int GP_LEVELUP = 8;
 
 	public static final int PL_NONE = -1;
 	public static final int PL_A = 0;
@@ -129,7 +128,8 @@ public abstract class GameSystem {
 
 	public static final int SP_DISCARD = 2;
 
-	public static final int SP_LEVELUP = 2;
+	public static final int SP_WAIT = 10;
+	public static final int SP_LEVELUP = 11;
 
 	public static final int ATK_NONE = 0;
 	public static final int ATK_DIRECT = 1;

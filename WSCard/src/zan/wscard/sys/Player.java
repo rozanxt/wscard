@@ -128,6 +128,11 @@ public class Player {
 
 	public boolean readyForLevelUp() {return (playerClock.size() >= 7);}
 
+	public boolean hasReversedCards() {
+		for (int i=0;i<3;i++) if (playerCardState[i] == CS_REVERSE) return true;
+		return false;
+	}
+
 	public int getHandCard(int hand) {return playerHand.get(hand);}
 	public int getStageCard(int stage) {return playerStages[stage];}
 

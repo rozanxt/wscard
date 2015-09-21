@@ -65,10 +65,6 @@ public abstract class GameServer extends GameSystem {
 		}
 		sendArrayListToClient(cid, MSG_ANSWER, ANS_DEALDAMAGE, cards);
 	}
-	private void doLevelUp(int cid) {
-		// TODO
-		sendToAllClients(MSG_ANSWER, ANS_LEVELUP);
-	}
 	private void doInformAction(int cid, int info, int[] content) {	// TODO
 		Player player = getPlayer(cid);
 		Player opponent = getOtherPlayer(cid);
@@ -186,7 +182,6 @@ public abstract class GameServer extends GameSystem {
 			} else if (tkns[0] == MSG_REQUEST) {
 				if (tkns[1] == REQ_DRAW) doDrawCards(cid, tkns[2]);
 				else if (tkns[1] == REQ_DEALDAMAGE) doDealDamage(cid, tkns[2]);
-				else if (tkns[1] == REQ_LEVELUP) doLevelUp(cid);
 			} else if (tkns[0] == MSG_ACTION) {
 				doInformAction(cid, tkns[1], Arrays.copyOfRange(tkns, 2, tkns.length));
 			}
