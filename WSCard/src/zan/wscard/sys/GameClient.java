@@ -12,6 +12,7 @@ public abstract class GameClient extends GameSystem {
 	private ArrayList<String> clientLog = new ArrayList<String>();
 	private int logCount = 0;
 	private boolean waitForVerification = false;
+	private boolean[] ready = new boolean[PL_NUM];
 
 	private Player player = new Player();
 	private Player opponent = new Player();
@@ -20,6 +21,11 @@ public abstract class GameClient extends GameSystem {
 
 	private AttackInfo attackInfo = new AttackInfo();
 	private ArrayList<String> actionStack = new ArrayList<String>();
+
+	public GameClient() {
+		ready[PL_A] = false;
+		ready[PL_B] = false;
+	}
 
 	public void initClient(PlayerInfo infoPlayer, PlayerInfo infoOpponent) {
 		player.setInfo(infoPlayer);
@@ -72,11 +78,28 @@ public abstract class GameClient extends GameSystem {
 		setSubPhase(SP_ATTACK_TRIGGER);
 	}
 	public void endAttack() {
-		stackAction(ACS_PHASE, GP_END);
+		stackAction(ACS_PHASE, GP_ENCORE);
 		endPhase();
+	}
+	public void actEncore(ArrayList<String> encore) {	// TODO
+		StringBuilder enc = new StringBuilder().append(MSG_ACTION).append(" ").append(ACT_ENCORE);
+		for (int i=0;i<encore.size();i++) enc.append(" ").append(encore.get(i));
+		sendToServer(enc.toString());
+		encore.clear();
+		setSubPhase(SP_ENCORE);
 	}
 	public void actCleanUp() {
 		sendToServer(MSG_ACTION, ACT_CLEANUP);
+		endPhase();
+	}
+	public void actDiscard(ArrayList<String> discard) {	// TODO
+		for (int i=0;i<discard.size();i++) sendToServer(discard.get(i));
+		discard.clear();
+		actEndTurn();
+	}
+	public void actEndTurn() {
+		stackAction(ACS_WAIT, 30);
+		stackAction(ACS_ENDTURN);
 		endPhase();
 	}
 
@@ -93,7 +116,8 @@ public abstract class GameClient extends GameSystem {
 	private void syncPhase(int phase) {
 		if (!isPhase(phase)) {
 			setPhase(phase);
-			if (isInTurn()) startPhase();
+			if (isPhase(GP_ENCORE)) startPhase();
+			else if (isInTurn()) startPhase();
 		}
 	}
 	private void syncTurn(int turn) {
@@ -248,12 +272,25 @@ public abstract class GameClient extends GameSystem {
 			}
 			attackInfo.clear();
 			stackAction(ACS_SUBPHASE, SP_START);
+		} else if (info == ACT_ENCORE) {
+			for (int i=0;i<content.length;i++) {
+				player.payStock(3);
+				player.setCardState(content[i], CS_REST);
+				stackAction(ACS_PL_PAYSTOCK, 3);
+				stackAction(ACS_PL_ENCORE, content[i]);
+			}
+			stackAction(ACS_SUBPHASE, SP_CLEANUP);
 		} else if (info == ACT_CLEANUP) {
-			opponent.doCleanUp();
 			player.doCleanUp();
-			stackAction(ACS_OP_CLEANUP);
 			stackAction(ACS_PL_CLEANUP);
-			stackAction(ACS_ENDTURN);
+			if (isInTurn()) {
+				ready[PL_A] = true;
+				if (ready[PL_A] && ready[PL_B]) {
+					ready[PL_A] = false;
+					ready[PL_B] = false;
+					stackAction(ACS_PHASE, GP_END);
+				}
+			}
 		} else if (info == ACT_LEVELUP) {
 			player.doLevelUp(content[0]);
 			stackAction(ACS_PL_LEVELUP, content[0]);
@@ -347,11 +384,25 @@ public abstract class GameClient extends GameSystem {
 				stackAction(ACS_OP_REVERSE, attackInfo.getAttackerStage());
 			}
 			attackInfo.clear();
+		} else if (info == ACT_ENCORE) {
+			for (int i=0;i<content.length;i++) {
+				opponent.payStock(3);
+				opponent.setCardState(content[i], CS_REST);
+				stackAction(ACS_OP_PAYSTOCK, 3);
+				stackAction(ACS_OP_ENCORE, content[i]);
+			}
 		} else if (info == ACT_CLEANUP) {
-			player.doCleanUp();
 			opponent.doCleanUp();
-			stackAction(ACS_PL_CLEANUP);
 			stackAction(ACS_OP_CLEANUP);
+			if (isInTurn()) {
+				ready[PL_B] = true;
+				if (ready[PL_A] && ready[PL_B]) {
+					ready[PL_A] = false;
+					ready[PL_B] = false;
+					stackAction(ACS_PHASE, GP_END);
+					System.out.println("ASKNAS");
+				}
+			}
 		} else if (info == ACT_LEVELUP) {
 			opponent.doLevelUp(content[0]);
 			stackAction(ACS_OP_LEVELUP, content[0]);
@@ -414,14 +465,11 @@ public abstract class GameClient extends GameSystem {
 
 	public boolean isInTurn() {return isTurn(clientID);}
 
+	public void endTurn() {sendToServer(MSG_ACTION + " " + ACT_ENDTURN);}
 	public void setSubPhase(int phase) {subPhase = phase;}
 	public void startPhase() {setSubPhase(SP_START);}
 	public void endPhase() {setSubPhase(SP_END);}
 	public boolean isSubPhase(int phase) {return (subPhase == phase);}
-
-	public void endTurn() {
-		sendToServer(MSG_ACTION + " " + ACT_ENDTURN);
-	}
 
 	private void stackAction(int type, int... data) {
 		StringBuilder act = new StringBuilder().append(type);

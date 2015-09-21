@@ -246,26 +246,28 @@ public class GameGUI {
 			}
 
 			if (selectedCard != null) {
-				StageField sf = (StageField)selectedCard.getCardField();
-				int sid = sf.getStageID();
-				if (opponentStages[2-sid].hasCard()) {
-					if (isKeyPressed(IM_KEY_1)) {
-						// Submits frontal attack
-						selectedCard.setCardState(2);
-						selectedCard = null;
-						gameClient.actAttack(ATK_FRONTAL, sid);
-					} else if (isKeyPressed(IM_KEY_2)) {
-						// Submits side attack
-						selectedCard.setCardState(2);
-						selectedCard = null;
-						gameClient.actAttack(ATK_SIDE, sid);
-					}
-				} else {
-					if (isKeyPressed(IM_KEY_0)) {
-						// Submits direct attack
-						selectedCard.setCardState(2);
-						selectedCard = null;
-						gameClient.actAttack(ATK_DIRECT, sid);
+				if (selectedCard.getCardField() instanceof StageField) {
+					StageField sf = (StageField)selectedCard.getCardField();
+					int sid = sf.getStageID();
+					if (opponentStages[2-sid].hasCard()) {
+						if (isKeyPressed(IM_KEY_1)) {
+							// Submits frontal attack
+							selectedCard.setCardState(CS_REST);
+							selectedCard = null;
+							gameClient.actAttack(ATK_FRONTAL, sid);
+						} else if (isKeyPressed(IM_KEY_2)) {
+							// Submits side attack
+							selectedCard.setCardState(CS_REST);
+							selectedCard = null;
+							gameClient.actAttack(ATK_SIDE, sid);
+						}
+					} else {
+						if (isKeyPressed(IM_KEY_0)) {
+							// Submits direct attack
+							selectedCard.setCardState(CS_REST);
+							selectedCard = null;
+							gameClient.actAttack(ATK_DIRECT, sid);
+						}
 					}
 				}
 			}
@@ -278,8 +280,80 @@ public class GameGUI {
 		}
 	}
 
+	private void onEncorePhase() {
+		if (gameClient.isSubPhase(SP_START)) {	// TODO Skip encore
+			if (isMousePressed(IM_MOUSE_BUTTON_1)) {
+				// Selects a card from the center stage
+				selectedCard = null;
+				for (int i=0;i<3;i++) {
+					CardObject sc = playerStages[i].getCard();
+					if (sc != null) {
+						if (sc.getCardState() == CS_REVERSE && sc.isInBound(mouseX, mouseY)) {
+							selectedCard = sc;
+							break;
+						}
+					}
+				}
+			}
+
+			if (selectedCard != null && playerStock.getNumCards() >= 3) {
+				if (selectedCard.getCardField() instanceof StageField) {
+					StageField sf = (StageField)selectedCard.getCardField();
+					if (isKeyPressed(IM_KEY_3)) {
+						// Submits encore
+						for (int i=0;i<3;i++) {
+							CardObject cost = playerStock.getCard(playerStock.getNumCards()-1);
+							playerStock.removeCard(cost);
+							playerWaitingRoom.addCard(cost);
+						}
+						selectedCard.setCardState(CS_REST);
+						selectedCard = null;
+						playerActions.add(String.valueOf(sf.getStageID()));
+					}
+				}
+			}
+
+			if (isKeyPressed(IM_KEY_SPACE)) {
+				// Ends attack phase
+				selectedCard = null;
+				gameClient.actEncore(playerActions);
+			}
+		} else if (gameClient.isSubPhase(SP_CLEANUP)) {
+			gameClient.actCleanUp();
+		}
+	}
+
 	private void onEndPhase() {
-		if (gameClient.isSubPhase(SP_START)) gameClient.actCleanUp();
+		if (gameClient.isSubPhase(SP_START)) {
+			if (playerHand.getNumCards() > 7) {
+				gameClient.setSubPhase(SP_DISCARD);
+			} else {
+				gameClient.actEndTurn();
+			}
+		} else if (gameClient.isSubPhase(SP_DISCARD)) {
+			if (heldCard == null) {
+				if (isKeyPressed(IM_KEY_SPACE)) {
+					if (playerHand.getNumCards() <= 7) {
+						// Submits discarded cards in end phase
+						gameClient.actDiscard(playerActions);
+					}
+				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
+					checkDragFromHand();
+				}
+			} else {
+				holdCard();
+				if (isMouseReleased(IM_MOUSE_BUTTON_1)) {
+					if (playerWaitingRoom.isInBound(mouseX, mouseY)) {
+						// Discards a card
+						playerHand.removeCard(heldCard);
+						playerWaitingRoom.addCard(heldCard);
+						activeCards.remove(heldCard);
+						playerActions.add(MSG_ACTION + " " + ACT_DISCARDFROMHAND + " " + heldCard.getCardID());
+					}
+					dropCard();
+				}
+			}
+		}
 	}
 
 	private void onLevelUp() {
@@ -310,6 +384,10 @@ public class GameGUI {
 				} else if (gameClient.isPhase(GP_END)) {
 					onEndPhase();
 				}
+			}
+
+			if (gameClient.isPhase(GP_ENCORE)) {
+				onEncorePhase();
 			}
 
 			// TODO Level up
@@ -421,6 +499,8 @@ public class GameGUI {
 			actionDelay = 20;
 		} else if (tkns[0] == ACS_PL_ATTACK_BATTLE) {
 			// NONE
+		} else if (tkns[0] == ACS_PL_ENCORE) {
+			// NONE
 		} else if (tkns[0] == ACS_PL_CLEANUP) {
 			for (int i=0;i<playerStages.length;i++) {
 				if (playerStages[i].hasCard()) {
@@ -443,6 +523,8 @@ public class GameGUI {
 		} else if (tkns[0] == ACS_PL_REVERSE) {
 			playerStages[tkns[1]].getCard().setCardState(CS_REVERSE);
 			actionDelay = 30;
+		} else if (tkns[0] == ACS_PL_PAYSTOCK) {	// TODO
+			// NONE
 		} else if (tkns[0] == ACS_OP_NONE) {
 			// NONE
 		} else if (tkns[0] == ACS_OP_ENDTURN) {
@@ -503,6 +585,9 @@ public class GameGUI {
 			actionDelay = 20;
 		} else if (tkns[0] == ACS_OP_ATTACK_BATTLE) {
 			// NONE
+		} else if (tkns[0] == ACS_OP_ENCORE) {
+			opponentStages[tkns[1]].getCard().setCardState(CS_REST);
+			actionDelay = 40;
 		} else if (tkns[0] == ACS_OP_CLEANUP) {
 			for (int i=0;i<opponentStages.length;i++) {
 				if (opponentStages[i].hasCard()) {
@@ -525,6 +610,13 @@ public class GameGUI {
 		} else if (tkns[0] == ACS_OP_REVERSE) {
 			opponentStages[tkns[1]].getCard().setCardState(CS_REVERSE);
 			actionDelay = 30;
+		} else if (tkns[0] == ACS_OP_PAYSTOCK) {
+			for (int i=0;i<tkns[1];i++) {
+				CardObject cost = opponentStock.getCard(opponentStock.getNumCards()-1);
+				opponentStock.removeCard(cost);
+				opponentWaitingRoom.addCard(cost);
+			}
+			actionDelay = 10;
 		}
 	}
 
@@ -670,6 +762,7 @@ public class GameGUI {
 			else if (gameClient.isPhase(GP_CLOCK)) TextManager.renderText(sp, "Clock Phase", "defont");
 			else if (gameClient.isPhase(GP_MAIN)) TextManager.renderText(sp, "Main Phase", "defont");
 			else if (gameClient.isPhase(GP_ATTACK)) TextManager.renderText(sp, "Attack Phase", "defont");
+			else if (gameClient.isPhase(GP_ENCORE)) TextManager.renderText(sp, "Encore Phase", "defont");
 			else if (gameClient.isPhase(GP_END)) TextManager.renderText(sp, "End Phase", "defont");
 			else if (gameClient.isPhase(GP_LEVELUP)) TextManager.renderText(sp, "Level Up!", "defont");
 			sp.popMatrix();

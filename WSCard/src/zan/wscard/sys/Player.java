@@ -109,6 +109,13 @@ public class Player {
 		}
 	}
 
+	public void payStock(int cost) {
+		for (int i=0;i<cost;i++) {
+			int paid = playerStock.remove(playerStock.size()-1);
+			addToWaitingRoom(paid);
+		}
+	}
+
 	public boolean removeFromHand(int card) {
 		for (int i=0;i<playerHand.size();i++) {
 			if (playerHand.get(i) == card) {

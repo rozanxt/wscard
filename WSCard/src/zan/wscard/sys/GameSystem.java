@@ -39,9 +39,10 @@ public abstract class GameSystem {
 	public static final int ACT_ATTACK_TRIGGER = 10;
 	public static final int ACT_ATTACK_DAMAGE = 11;
 	public static final int ACT_ATTACK_BATTLE = 12;
-	public static final int ACT_CLEANUP = 13;
-	public static final int ACT_LEVELUP = 14;
-	public static final int ACT_RESHUFFLE = 15;
+	public static final int ACT_ENCORE = 13;
+	public static final int ACT_CLEANUP = 14;
+	public static final int ACT_LEVELUP = 15;
+	public static final int ACT_RESHUFFLE = 16;
 
 	public static final int ACS_NONE = 0;
 	public static final int ACS_WAIT = 1;
@@ -62,11 +63,13 @@ public abstract class GameSystem {
 	public static final int ACS_PL_ATTACK_TRIGGER = 110;
 	public static final int ACS_PL_ATTACK_DAMAGE = 111;
 	public static final int ACS_PL_ATTACK_BATTLE = 112;
-	public static final int ACS_PL_CLEANUP = 113;
-	public static final int ACS_PL_LEVELUP = 114;
-	public static final int ACS_PL_RESHUFFLE = 115;
+	public static final int ACS_PL_ENCORE = 113;
+	public static final int ACS_PL_CLEANUP = 114;
+	public static final int ACS_PL_LEVELUP = 115;
+	public static final int ACS_PL_RESHUFFLE = 116;
 	public static final int ACS_PL_ATTACK_CANCEL = 151;
 	public static final int ACS_PL_REVERSE = 152;
+	public static final int ACS_PL_PAYSTOCK = 153;
 
 	public static final int ACS_OP_NONE = 200;
 	public static final int ACS_OP_ENDTURN = 201;
@@ -81,11 +84,13 @@ public abstract class GameSystem {
 	public static final int ACS_OP_ATTACK_TRIGGER = 210;
 	public static final int ACS_OP_ATTACK_DAMAGE = 211;
 	public static final int ACS_OP_ATTACK_BATTLE = 212;
-	public static final int ACS_OP_CLEANUP = 213;
-	public static final int ACS_OP_LEVELUP = 214;
-	public static final int ACS_OP_RESHUFFLE = 215;
+	public static final int ACS_OP_ENCORE = 213;
+	public static final int ACS_OP_CLEANUP = 214;
+	public static final int ACS_OP_LEVELUP = 215;
+	public static final int ACS_OP_RESHUFFLE = 216;
 	public static final int ACS_OP_ATTACK_CANCEL = 251;
 	public static final int ACS_OP_REVERSE = 252;
+	public static final int ACS_OP_PAYSTOCK = 253;
 
 	// GAME ENUM
 
@@ -100,8 +105,9 @@ public abstract class GameSystem {
 	public static final int GP_CLOCK = 3;
 	public static final int GP_MAIN = 4;
 	public static final int GP_ATTACK = 5;
-	public static final int GP_END = 6;
-	public static final int GP_LEVELUP = 7;
+	public static final int GP_ENCORE = 6;
+	public static final int GP_END = 7;
+	public static final int GP_LEVELUP = 8;
 
 	public static final int PL_NONE = -1;
 	public static final int PL_A = 0;
@@ -117,6 +123,11 @@ public abstract class GameSystem {
 	public static final int SP_ATTACK_TRIGGER = 2;
 	public static final int SP_ATTACK_DAMAGE = 3;
 	public static final int SP_ATTACK_BATTLE = 4;
+
+	public static final int SP_ENCORE = 2;
+	public static final int SP_CLEANUP = 3;
+
+	public static final int SP_DISCARD = 2;
 
 	public static final int SP_LEVELUP = 2;
 

@@ -132,8 +132,12 @@ public abstract class GameServer extends GameSystem {
 				player.setCardState(attackInfo.getAttackerStage(), CS_REVERSE);
 			}
 			attackInfo.clear();
+		} else if (info == ACT_ENCORE) {
+			for (int i=0;i<content.length;i++) {
+				player.payStock(3);
+				player.setCardState(content[0], CS_REST);
+			}
 		} else if (info == ACT_CLEANUP) {
-			opponent.doCleanUp();
 			player.doCleanUp();
 		} else if (info == ACT_LEVELUP) {
 			player.doLevelUp(content[0]);
