@@ -41,7 +41,7 @@ public class Player {
 
 	public void reshuffleDeck() {
 		for (int i=0;i<playerWaitingRoom.size();i++) playerDeck.add(playerWaitingRoom.get(i));
-		playerWaitingRoom.clear();
+		doReshuffle();
 		shuffleDeck();
 	}
 
@@ -108,6 +108,10 @@ public class Player {
 			if (removed == card) playerLevel.add(removed);
 			else playerWaitingRoom.add(removed);
 		}
+	}
+
+	public void doReshuffle() {
+		playerWaitingRoom.clear();
 	}
 
 	public void payStock(int cost) {

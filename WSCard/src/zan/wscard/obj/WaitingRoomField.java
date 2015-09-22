@@ -33,9 +33,14 @@ public class WaitingRoomField extends CardField {
 
 	public CardObject getCard(int card) {return waitingRoomCards.get(card);}
 
+	public int getNumCards() {return waitingRoomCards.size();}
+
 	@Override
 	public void update() {
-		for (int i=0;i<waitingRoomCards.size();i++) waitingRoomCards.get(i).update();
+		for (int i=0;i<waitingRoomCards.size();i++) {
+			waitingRoomCards.get(i).hide = false;
+			waitingRoomCards.get(i).update();
+		}
 	}
 
 	@Override
@@ -54,7 +59,7 @@ public class WaitingRoomField extends CardField {
 
 	@Override
 	public void renderCards(DefaultShader sp, double ip) {
-		for (int i=0;i<waitingRoomCards.size();i++) if (!waitingRoomCards.get(i).isHeld()) waitingRoomCards.get(i).render(sp, ip);
+		for (int i=0;i<waitingRoomCards.size();i++) waitingRoomCards.get(i).render(sp, ip);
 	}
 
 }

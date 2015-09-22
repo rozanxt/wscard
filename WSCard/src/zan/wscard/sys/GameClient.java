@@ -150,6 +150,7 @@ public abstract class GameClient extends GameSystem {
 	private void doDrawToHand(int[] cards) {
 		for (int i=0;i<cards.length;i++) {
 			if (cards[i] == CARD_NONE) {
+				player.doReshuffle();
 				stackAction(ACS_PL_RESHUFFLE);
 			} else {
 				player.addToHand(cards[i]);
@@ -256,6 +257,7 @@ public abstract class GameClient extends GameSystem {
 					int cancelled = 0;
 					for (int i=0;i<content.length;i++) {
 						if (content[i] == CARD_NONE) {
+							opponent.doReshuffle();
 							stackAction(ACS_OP_RESHUFFLE);
 						} else {
 							cancelled++;
@@ -343,6 +345,7 @@ public abstract class GameClient extends GameSystem {
 		} else if (info == ACT_DRAWTOHAND) {
 			for (int i=0;i<content.length;i++) {
 				if (content[i] == CARD_NONE) {
+					player.doReshuffle();
 					stackAction(ACS_OP_RESHUFFLE);
 				} else {
 					player.addToHand(content[i]);
@@ -383,6 +386,7 @@ public abstract class GameClient extends GameSystem {
 					int cancelled = 0;
 					for (int i=0;i<content.length;i++) {
 						if (content[i] == CARD_NONE) {
+							player.doReshuffle();
 							stackAction(ACS_PL_RESHUFFLE);
 						} else {
 							cancelled++;

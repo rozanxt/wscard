@@ -546,7 +546,9 @@ public class GameGUI {
 		} else if (tkns[0] == ACS_PL_LEVELUP) {
 			// NONE
 		} else if (tkns[0] == ACS_PL_RESHUFFLE) {
-			// TODO
+			for (int i=0;i<playerWaitingRoom.getNumCards();i++) playerDeck.addCard(playerWaitingRoom.getCard(i));
+			playerWaitingRoom.clearWaitingRoom();
+			actionDelay = 80;
 		} else if (tkns[0] == ACS_PL_ATTACK_CANCEL) {
 			ArrayList<CardObject> cancelled = playerClock.removeCards(tkns[1]);
 			for (int i=0;i<cancelled.size();i++) playerWaitingRoom.addCard(cancelled.get(i));
@@ -642,7 +644,9 @@ public class GameGUI {
 				opponentClock.removeCard(opponentClock.getCard(0));
 			}
 		} else if (tkns[0] == ACS_OP_RESHUFFLE) {
-			// TODO
+			for (int i=0;i<opponentWaitingRoom.getNumCards();i++) opponentDeck.addCard(opponentWaitingRoom.getCard(i));
+			opponentWaitingRoom.clearWaitingRoom();
+			actionDelay = 80;
 		} else if (tkns[0] == ACS_OP_ATTACK_CANCEL) {
 			ArrayList<CardObject> cancelled = opponentClock.removeCards(tkns[1]);
 			for (int i=0;i<cancelled.size();i++) opponentWaitingRoom.addCard(cancelled.get(i));
