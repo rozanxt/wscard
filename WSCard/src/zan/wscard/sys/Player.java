@@ -121,6 +121,14 @@ public class Player {
 		}
 	}
 
+	public int getLevel() {
+		return playerLevel.size();
+	}
+
+	public int getStock() {
+		return playerStock.size();
+	}
+
 	public boolean removeFromHand(int card) {
 		for (int i=0;i<playerHand.size();i++) {
 			if (playerHand.get(i) == card) {

@@ -85,6 +85,7 @@ public abstract class GameClient extends GameSystem {
 		endPhase();
 	}
 	public void actEncore(ArrayList<String> encore) {	// TODO
+		sendToServer(MSG_ACTION, ACT_PAYSTOCK, encore.size()*3);
 		StringBuilder enc = new StringBuilder().append(MSG_ACTION).append(" ").append(ACT_ENCORE);
 		for (int i=0;i<encore.size();i++) enc.append(" ").append(encore.get(i));
 		sendToServer(enc.toString());
@@ -296,9 +297,7 @@ public abstract class GameClient extends GameSystem {
 			stackAction(ACS_SUBPHASE, SP_START);
 		} else if (info == ACT_ENCORE) {	// TODO Separate messages pay stock and encore
 			for (int i=0;i<content.length;i++) {
-				player.payStock(3);
 				player.setCardState(content[i], CS_REST);
-				stackAction(ACS_PL_PAYSTOCK, 3);
 				stackAction(ACS_PL_ENCORE, content[i]);
 			}
 			stackAction(ACS_SUBPHASE, SP_CLEANUP);
@@ -321,6 +320,11 @@ public abstract class GameClient extends GameSystem {
 			}
 			if (player.isDefeated()) {
 				sendToServer(MSG_DEFEAT);
+			}
+		} else if (info == ACT_PAYSTOCK) {
+			player.payStock(content[0]);
+			for (int i=0;i<content[0];i++) {
+				stackAction(ACS_PL_PAYSTOCK);
 			}
 		}
 
@@ -424,9 +428,7 @@ public abstract class GameClient extends GameSystem {
 			attackInfo.clear();
 		} else if (info == ACT_ENCORE) {
 			for (int i=0;i<content.length;i++) {
-				opponent.payStock(3);
 				opponent.setCardState(content[i], CS_REST);
-				stackAction(ACS_OP_PAYSTOCK, 3);
 				stackAction(ACS_OP_ENCORE, content[i]);
 			}
 		} else if (info == ACT_CLEANUP) {
@@ -445,6 +447,11 @@ public abstract class GameClient extends GameSystem {
 			stackAction(ACS_OP_LEVELUP, content[0]);
 			if (!player.readyForLevelUp() && !opponent.readyForLevelUp()) {
 				stackAction(ACS_RESTORESUBPHASE);
+			}
+		} else if (info == ACT_PAYSTOCK) {
+			opponent.payStock(content[0]);
+			for (int i=0;i<content[0];i++) {
+				stackAction(ACS_OP_PAYSTOCK);
 			}
 		}
 

@@ -42,7 +42,9 @@ public abstract class GameSystem {
 	public static final int ACT_ENCORE = 13;
 	public static final int ACT_CLEANUP = 14;
 	public static final int ACT_LEVELUP = 15;
-	public static final int ACT_RESHUFFLE = 16;
+	//public static final int ACT_RESHUFFLE = 16;
+	//public static final int ACT_CLOCKFROMDECK = 17;	// TODO
+	public static final int ACT_PAYSTOCK = 18;
 
 	public static final int ACS_NONE = 0;
 	public static final int ACS_WAIT = 1;

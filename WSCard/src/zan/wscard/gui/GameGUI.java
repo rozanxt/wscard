@@ -7,6 +7,7 @@ import zan.lib.gfx.shader.DefaultShader;
 import zan.lib.gfx.text.TextManager;
 import zan.lib.util.Utility;
 import zan.lib.util.math.Vec2D;
+import zan.wscard.card.CardData;
 import zan.wscard.obj.CardField;
 import zan.wscard.obj.CardObject;
 import zan.wscard.obj.ClockField;
@@ -17,6 +18,7 @@ import zan.wscard.obj.StageField;
 import zan.wscard.obj.StockField;
 import zan.wscard.obj.WaitingRoomField;
 import zan.wscard.sys.GameClient;
+import zan.wscard.sys.Player;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLE_FAN;
 import static zan.wscard.sys.GameSystem.*;
 import static zan.lib.input.InputManager.*;
@@ -43,6 +45,8 @@ public class GameGUI {
 	private ArrayList<String> playerActions = new ArrayList<String>();
 
 	private VertexObject selected;
+
+	private int costToPay = 0;
 
 	private int actionDelay = 0;
 
@@ -171,8 +175,10 @@ public class GameGUI {
 				if (isKeyPressed(IM_KEY_SPACE)) {
 					// Ends main phase
 					for (int i=0;i<playerStages.length;i++) if (playerStages[i].getCard() != null) playerStages[i].getCard().setCardState(1);
+					if (costToPay > 0) playerActions.add(MSG_ACTION + " " + ACT_PAYSTOCK + " " + costToPay);
 					playerActions.add(MSG_ACTION + " " + ACT_MAIN_END);
 					gameClient.actMain(playerActions);
+					costToPay = 0;
 				} else if (isMousePressed(IM_MOUSE_BUTTON_1)) {
 					checkDragFromHand();
 					checkDragFromStage();
@@ -183,13 +189,28 @@ public class GameGUI {
 					CardField previousField = heldCard.getCardField();
 					if (previousField instanceof HandField) {
 						// Places a card from hand on stage
-						for (int i=0;i<playerStages.length;i++) {
-							StageField sf = playerStages[i];
-							if (sf.isInBound(mouseX, mouseY) && sf.getCard() == null) {
-								playerHand.removeCard(heldCard);
-								sf.setCard(heldCard);
-								playerActions.add(MSG_ACTION + " " + ACT_PLACEFROMHAND + " " + heldCard.getCardID() + " " + sf.getStageID());
-								break;
+						Player player = gameClient.getPlayer();
+						CardData cardData = player.getCardData(heldCard.getCardID());
+						if (cardData.level > player.getLevel()) {
+							// TODO Notification
+						} else if (cardData.cost > (player.getStock() - costToPay)) {
+							// TODO Notification
+						} else if (cardData.type == CARD_CLIMAX) {
+							// TODO Notification
+						} else if (cardData.type == CARD_EVENT) {
+							// TODO Notification
+						} else if (cardData.level > 0 && !checkPlacableColor(cardData.color)) {
+							// TODO Notification
+						} else {
+							for (int i=0;i<playerStages.length;i++) {
+								StageField sf = playerStages[i];
+								if (sf.isInBound(mouseX, mouseY) && sf.getCard() == null) {
+									playerHand.removeCard(heldCard);
+									sf.setCard(heldCard);
+									playerActions.add(MSG_ACTION + " " + ACT_PLACEFROMHAND + " " + heldCard.getCardID() + " " + sf.getStageID());
+									costToPay += cardData.cost;
+									break;
+								}
 							}
 						}
 					} else if (previousField instanceof StageField) {
@@ -211,6 +232,8 @@ public class GameGUI {
 							StageField pf = (StageField)previousField;
 							pf.setCard(null);
 							playerHand.addCard(heldCard);
+
+							costToPay -= gameClient.getPlayer().getCardData(heldCard.getCardID()).cost;
 
 							for (int i=0;i<playerActions.size();i++) {
 								String[] action = playerActions.get(i).split(" ");
@@ -297,19 +320,17 @@ public class GameGUI {
 					}
 				}
 
-				if (selectedCard != null && playerStock.getNumCards() >= 3) {
-					if (selectedCard.getCardField() instanceof StageField) {
+				if (selectedCard != null) {
+					if (gameClient.getPlayer().getStock() < 3) {
+						// TODO Notification
+					} else if (selectedCard.getCardField() instanceof StageField) {
 						StageField sf = (StageField)selectedCard.getCardField();
 						if (isKeyPressed(IM_KEY_3)) {
 							// Submits encore
-							for (int i=0;i<3;i++) {
-								CardObject cost = playerStock.getCard(playerStock.getNumCards()-1);
-								playerStock.removeCard(cost);
-								playerWaitingRoom.addCard(cost);
-							}
 							selectedCard.setCardState(CS_REST);
 							selectedCard = null;
 							playerActions.add(String.valueOf(sf.getStageID()));
+							costToPay += 3;
 						}
 					}
 				}
@@ -318,6 +339,7 @@ public class GameGUI {
 					// Ends attack phase
 					selectedCard = null;
 					gameClient.actEncore(playerActions);
+					costToPay = 0;
 				}
 			}
 		} else if (gameClient.isSubPhase(SP_CLEANUP)) {
@@ -472,6 +494,20 @@ public class GameGUI {
 		return false;
 	}
 
+	private boolean checkPlacableColor(int color) {
+		ArrayList<Integer> colors = new ArrayList<Integer>();
+		for (int i=0;i<playerLevel.getNumCards();i++) {
+			colors.add(gameClient.getPlayer().getCardData(playerLevel.getCard(i).getCardID()).color);
+		}
+		for (int i=0;i<playerClock.getNumCards();i++) {
+			colors.add(gameClient.getPlayer().getCardData(playerClock.getCard(i).getCardID()).color);
+		}
+		for (int i=0;i<colors.size();i++) {
+			if (color == colors.get(i)) return true;
+		}
+		return false;
+	}
+
 	// Action Events
 
 	private void doActionEvent(int[] tkns) {	// TODO TRIGGER, RESHUFFLE
@@ -557,7 +593,10 @@ public class GameGUI {
 			playerStages[tkns[1]].getCard().setCardState(CS_REVERSE);
 			actionDelay = 30;
 		} else if (tkns[0] == ACS_PL_PAYSTOCK) {
-			// NONE
+			CardObject cost = playerStock.getCard(playerStock.getNumCards()-1);
+			playerStock.removeCard(cost);
+			playerWaitingRoom.addCard(cost);
+			actionDelay = 10;
 		} else if (tkns[0] == ACS_OP_NONE) {
 			// NONE
 		} else if (tkns[0] == ACS_OP_ENDTURN) {
@@ -655,11 +694,9 @@ public class GameGUI {
 			opponentStages[tkns[1]].getCard().setCardState(CS_REVERSE);
 			actionDelay = 30;
 		} else if (tkns[0] == ACS_OP_PAYSTOCK) {
-			for (int i=0;i<tkns[1];i++) {
-				CardObject cost = opponentStock.getCard(opponentStock.getNumCards()-1);
-				opponentStock.removeCard(cost);
-				opponentWaitingRoom.addCard(cost);
-			}
+			CardObject cost = opponentStock.getCard(opponentStock.getNumCards()-1);
+			opponentStock.removeCard(cost);
+			opponentWaitingRoom.addCard(cost);
 			actionDelay = 10;
 		}
 	}
@@ -723,33 +760,33 @@ public class GameGUI {
 	// Render
 
 	public void render(DefaultShader sp, double ip) {
+		playerDeck.renderField(sp, ip);
 		playerStock.renderField(sp, ip);
 		playerWaitingRoom.renderField(sp, ip);
-		playerDeck.renderField(sp, ip);
 		playerLevel.renderField(sp, ip);
 		playerClock.renderField(sp, ip);
 		for (int i=0;i<playerStages.length;i++) playerStages[i].renderField(sp, ip);
 		playerHand.renderField(sp, ip);
 
+		opponentDeck.renderField(sp, ip);
 		opponentStock.renderField(sp, ip);
 		opponentWaitingRoom.renderField(sp, ip);
-		opponentDeck.renderField(sp, ip);
 		opponentLevel.renderField(sp, ip);
 		opponentClock.renderField(sp, ip);
 		for (int i=0;i<opponentStages.length;i++) opponentStages[i].renderField(sp, ip);
 		opponentHand.renderField(sp, ip);
 
+		playerDeck.renderCards(sp, ip);
 		playerStock.renderCards(sp, ip);
 		playerWaitingRoom.renderCards(sp, ip);
-		playerDeck.renderCards(sp, ip);
 		playerLevel.renderCards(sp, ip);
 		playerClock.renderCards(sp, ip);
 		for (int i=0;i<playerStages.length;i++) playerStages[i].renderCards(sp, ip);
 		playerHand.renderCards(sp, ip);
 
+		opponentDeck.renderCards(sp, ip);
 		opponentStock.renderCards(sp, ip);
 		opponentWaitingRoom.renderCards(sp, ip);
-		opponentDeck.renderCards(sp, ip);
 		opponentLevel.renderCards(sp, ip);
 		opponentClock.renderCards(sp, ip);
 		for (int i=0;i<opponentStages.length;i++) opponentStages[i].renderCards(sp, ip);
@@ -772,7 +809,7 @@ public class GameGUI {
 			sp.pushMatrix();
 			sp.translate(-400.0, -300.0, 0.0);
 			sp.scale(12.0, 12.0, 1.0);
-			TextManager.renderText(sp, hoveredCard.getCardData().name + " " + hoveredCard.getCardData().power, "defont");
+			TextManager.renderText(sp, hoveredCard.getCardID() + " " + hoveredCard.getCardData().name + " | Level: " + hoveredCard.getCardData().level + " Cost: " + hoveredCard.getCardData().cost + " Power: " + hoveredCard.getCardData().power + " Soul: " + hoveredCard.getCardData().soul, "defont");
 			sp.popMatrix();
 		}
 
@@ -811,6 +848,18 @@ public class GameGUI {
 			else if (gameClient.isPhase(GP_ENCORE)) TextManager.renderText(sp, "Encore Phase", "defont");
 			else if (gameClient.isPhase(GP_END)) TextManager.renderText(sp, "End Phase", "defont");
 			sp.popMatrix();
+
+			if (gameClient.isInTurn()) {
+				if (gameClient.isPhase(GP_MAIN) || gameClient.isPhase(GP_ENCORE)) {
+					if (gameClient.isSubPhase(SP_START) && costToPay > 0) {
+						sp.pushMatrix();
+						sp.translate(350.0, -300.0, 0.0);
+						sp.scale(12.0, 12.0, 1.0);
+						TextManager.renderText(sp, "Pay: " + costToPay, "defont");
+						sp.popMatrix();
+					}
+				}
+			}
 		} else if (gameClient.isState(GS_END) && gameClient.getWinner() != PL_NONE) {
 			sp.pushMatrix();
 			sp.translate(-400.0, 288.0, 0.0);

@@ -1,7 +1,7 @@
 ID: PD-101
 NAME: "Next to you" Hatsune Miku
 TYPE: CHARA
-COLOR: GREEN		
+COLOR: GREEN
 LEVEL: 1
 COST: 0
 POWER: 3000
@@ -97,7 +97,7 @@ IMAGE: res/img/card/PD/PD-105.jpg
 ID: PD-106
 NAME: Black Rock Shooter
 TYPE: CLIMAX
-COLOR: GREEN	
+COLOR: GREEN
 LEVEL: 0
 COST: 0
 POWER: 0
@@ -193,7 +193,7 @@ IMAGE: res/img/card/PD/PD-T04.jpg
 ID: PD-T05
 NAME: "Continuation of Dream" Kagamine Len
 TYPE: CHARA
-COLOR: YELLOW 
+COLOR: YELLOW
 LEVEL: 2
 COST: 1
 POWER: 8500
