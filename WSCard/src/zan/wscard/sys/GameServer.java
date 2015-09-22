@@ -154,6 +154,9 @@ public abstract class GameServer extends GameSystem {
 			player.payStock(content[0]);
 		} else if (info == ACT_RESHUFFLECOST) {
 			// NONE
+		} else if (info == ACT_DISCARDFROMSTAGE) {
+			player.removeFromStage(content[0]);
+			player.addToWaitingRoom(content[0]);
 		}
 
 		StringBuilder m = new StringBuilder().append(MSG_INFO).append(" ").append(cid).append(" ").append(info);

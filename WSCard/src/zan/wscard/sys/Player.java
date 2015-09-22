@@ -139,6 +139,16 @@ public class Player {
 		return false;
 	}
 
+	public boolean removeFromStage(int card) {
+		for (int i=0;i<playerStages.length;i++) {
+			if (playerStages[i] == card) {
+				playerStages[i] = CARD_NONE;
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public boolean readyForLevelUp() {return (playerClock.size() >= 7);}
 
 	public boolean hasReversedCards() {

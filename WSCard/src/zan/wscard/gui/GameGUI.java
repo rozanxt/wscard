@@ -215,7 +215,7 @@ public class GameGUI {
 						}
 					} else if (previousField instanceof StageField) {
 						// Swaps two cards on stage / Moves a card from a stage to another stage
-						boolean any = false;
+						boolean swap = false;
 						for (int i=0;i<playerStages.length;i++) {
 							StageField sf = playerStages[i];
 							if (sf.isInBound(mouseX, mouseY)) {
@@ -223,24 +223,31 @@ public class GameGUI {
 								pf.setCard(sf.getCard());
 								sf.setCard(heldCard);
 								playerActions.add(MSG_ACTION + " " + ACT_SWAPONSTAGE + " " + pf.getStageID() + " " + sf.getStageID());
-								any = true;
+								swap = true;
 								break;
 							}
 						}
-						// Returns a card from stage to hand / Cancels a card placement
-						if (!any && heldCard.getCardState() == CS_NONE) {
-							StageField pf = (StageField)previousField;
-							pf.setCard(null);
-							playerHand.addCard(heldCard);
 
-							costToPay -= gameClient.getPlayer().getCardData(heldCard.getCardID()).cost;
-
-							for (int i=0;i<playerActions.size();i++) {
-								String[] action = playerActions.get(i).split(" ");
-								if (Utility.parseInt(action[1]) == ACT_PLACEFROMHAND && Utility.parseInt(action[2]) == heldCard.getCardID()) {
-									playerActions.remove(i);
-									break;
+						if (!swap) {
+							if (heldCard.getCardState() == CS_NONE) {
+								// Returns a card from stage to hand / Cancels a card placement
+								StageField pf = (StageField)previousField;
+								pf.setCard(null);
+								playerHand.addCard(heldCard);
+								costToPay -= gameClient.getPlayer().getCardData(heldCard.getCardID()).cost;
+								for (int i=0;i<playerActions.size();i++) {
+									String[] action = playerActions.get(i).split(" ");
+									if (Utility.parseInt(action[1]) == ACT_PLACEFROMHAND && Utility.parseInt(action[2]) == heldCard.getCardID()) {
+										playerActions.remove(i);
+										break;
+									}
 								}
+							} else if (playerWaitingRoom.isInBound(mouseX, mouseY)) {
+								// Discards a card from the stage
+								StageField pf = (StageField)previousField;
+								pf.setCard(null);
+								playerWaitingRoom.addCard(heldCard);
+								playerActions.add(MSG_ACTION + " " + ACT_DISCARDFROMSTAGE + " " + heldCard.getCardID());
 							}
 						}
 					}
@@ -283,7 +290,7 @@ public class GameGUI {
 							gameClient.actAttack(ATK_SIDE, sid);
 						}
 					} else {
-						if (isKeyPressed(IM_KEY_0)) {
+						if (isKeyPressed(IM_KEY_3)) {
 							// Submits direct attack
 							selectedCard.setCardState(CS_REST);
 							selectedCard = null;
@@ -325,7 +332,7 @@ public class GameGUI {
 						// TODO Notification
 					} else if (selectedCard.getCardField() instanceof StageField) {
 						StageField sf = (StageField)selectedCard.getCardField();
-						if (isKeyPressed(IM_KEY_3)) {
+						if (isKeyPressed(IM_KEY_E)) {
 							// Submits encore
 							selectedCard.setCardState(CS_REST);
 							selectedCard = null;
@@ -602,6 +609,8 @@ public class GameGUI {
 			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
 			playerClock.addCard(card);
 			actionDelay = 30;
+		} else if (tkns[0] == ACS_PL_DISCARDFROMSTAGE) {
+			// NONE
 		} else if (tkns[0] == ACS_OP_NONE) {
 			// NONE
 		} else if (tkns[0] == ACS_OP_ENDTURN) {
@@ -708,6 +717,18 @@ public class GameGUI {
 			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
 			opponentClock.addCard(card);
 			actionDelay = 30;
+		} else if (tkns[0] == ACS_OP_DISCARDFROMSTAGE) {
+			for (int i=0;i<opponentStages.length;i++) {
+				if (opponentStages[i].hasCard()) {
+					if (opponentStages[i].getCard().getCardID() == tkns[1]) {
+						opponentWaitingRoom.addCard(opponentStages[i].getCard());
+						activeCards.remove(opponentStages[i].getCard());
+						opponentStages[i].setCard(null);
+						break;
+					}
+				}
+			}
+			actionDelay = 20;
 		}
 	}
 

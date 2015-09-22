@@ -329,6 +329,10 @@ public abstract class GameClient extends GameSystem {
 		} else if (info == ACT_RESHUFFLECOST) {
 			player.addToClock(content[0]);
 			stackAction(ACS_PL_RESHUFFLECOST, content[0]);
+		} else if (info == ACT_DISCARDFROMSTAGE) {
+			player.removeFromStage(content[0]);
+			player.addToWaitingRoom(content[0]);
+			stackAction(ACS_PL_DISCARDFROMSTAGE, content[0]);
 		}
 
 		if (!isSubPhase(SP_LEVELUP)) {
@@ -459,6 +463,10 @@ public abstract class GameClient extends GameSystem {
 		} else if (info == ACT_RESHUFFLECOST) {
 			opponent.addToClock(content[0]);
 			stackAction(ACS_OP_RESHUFFLECOST, content[0]);
+		} else if (info == ACT_DISCARDFROMSTAGE) {
+			opponent.removeFromStage(content[0]);
+			opponent.addToWaitingRoom(content[0]);
+			stackAction(ACS_OP_DISCARDFROMSTAGE, content[0]);
 		}
 
 		if (!isSubPhase(SP_LEVELUP)) {
