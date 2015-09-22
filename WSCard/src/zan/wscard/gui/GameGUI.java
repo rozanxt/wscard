@@ -597,6 +597,11 @@ public class GameGUI {
 			playerStock.removeCard(cost);
 			playerWaitingRoom.addCard(cost);
 			actionDelay = 10;
+		} else if (tkns[0] == ACS_PL_RESHUFFLECOST) {
+			CardObject card = new CardObject(tkns[1], gameClient.getPlayer().getCardData(tkns[1]));
+			card.setPos(playerDeck.getAnchorX(), playerDeck.getAnchorY());
+			playerClock.addCard(card);
+			actionDelay = 30;
 		} else if (tkns[0] == ACS_OP_NONE) {
 			// NONE
 		} else if (tkns[0] == ACS_OP_ENDTURN) {
@@ -698,6 +703,11 @@ public class GameGUI {
 			opponentStock.removeCard(cost);
 			opponentWaitingRoom.addCard(cost);
 			actionDelay = 10;
+		} else if (tkns[0] == ACS_OP_RESHUFFLECOST) {
+			CardObject card = new CardObject(tkns[1], gameClient.getOpponent().getCardData(tkns[1]));
+			card.setPos(opponentDeck.getAnchorX(), opponentDeck.getAnchorY());
+			opponentClock.addCard(card);
+			actionDelay = 30;
 		}
 	}
 
@@ -849,15 +859,13 @@ public class GameGUI {
 			else if (gameClient.isPhase(GP_END)) TextManager.renderText(sp, "End Phase", "defont");
 			sp.popMatrix();
 
-			if (gameClient.isInTurn()) {
-				if (gameClient.isPhase(GP_MAIN) || gameClient.isPhase(GP_ENCORE)) {
-					if (gameClient.isSubPhase(SP_START) && costToPay > 0) {
-						sp.pushMatrix();
-						sp.translate(350.0, -300.0, 0.0);
-						sp.scale(12.0, 12.0, 1.0);
-						TextManager.renderText(sp, "Pay: " + costToPay, "defont");
-						sp.popMatrix();
-					}
+			if (gameClient.isPhase(GP_MAIN) || gameClient.isPhase(GP_ENCORE)) {
+				if (costToPay > 0) {
+					sp.pushMatrix();
+					sp.translate(350.0, -300.0, 0.0);
+					sp.scale(12.0, 12.0, 1.0);
+					TextManager.renderText(sp, "Pay: " + costToPay, "defont");
+					sp.popMatrix();
 				}
 			}
 		} else if (gameClient.isState(GS_END) && gameClient.getWinner() != PL_NONE) {

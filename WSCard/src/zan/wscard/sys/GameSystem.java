@@ -42,9 +42,8 @@ public abstract class GameSystem {
 	public static final int ACT_ENCORE = 13;
 	public static final int ACT_CLEANUP = 14;
 	public static final int ACT_LEVELUP = 15;
-	//public static final int ACT_RESHUFFLE = 16;
-	//public static final int ACT_CLOCKFROMDECK = 17;	// TODO
-	public static final int ACT_PAYSTOCK = 18;
+	public static final int ACT_PAYSTOCK = 16;
+	public static final int ACT_RESHUFFLECOST = 17;
 
 	public static final int ACS_NONE = 0;
 	public static final int ACS_WAIT = 1;
@@ -70,10 +69,11 @@ public abstract class GameSystem {
 	public static final int ACS_PL_ENCORE = 113;
 	public static final int ACS_PL_CLEANUP = 114;
 	public static final int ACS_PL_LEVELUP = 115;
-	public static final int ACS_PL_RESHUFFLE = 116;
+	public static final int ACS_PL_PAYSTOCK = 116;
+	public static final int ACS_PL_RESHUFFLECOST = 117;
 	public static final int ACS_PL_ATTACK_CANCEL = 151;
 	public static final int ACS_PL_REVERSE = 152;
-	public static final int ACS_PL_PAYSTOCK = 153;
+	public static final int ACS_PL_RESHUFFLE = 153;
 
 	public static final int ACS_OP_NONE = 200;
 	public static final int ACS_OP_ENDTURN = 201;
@@ -91,10 +91,11 @@ public abstract class GameSystem {
 	public static final int ACS_OP_ENCORE = 213;
 	public static final int ACS_OP_CLEANUP = 214;
 	public static final int ACS_OP_LEVELUP = 215;
-	public static final int ACS_OP_RESHUFFLE = 216;
+	public static final int ACS_OP_PAYSTOCK = 216;
+	public static final int ACS_OP_RESHUFFLECOST = 217;
 	public static final int ACS_OP_ATTACK_CANCEL = 251;
 	public static final int ACS_OP_REVERSE = 252;
-	public static final int ACS_OP_PAYSTOCK = 253;
+	public static final int ACS_OP_RESHUFFLE = 253;
 
 	// GAME ENUM
 

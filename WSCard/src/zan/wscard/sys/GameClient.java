@@ -326,6 +326,9 @@ public abstract class GameClient extends GameSystem {
 			for (int i=0;i<content[0];i++) {
 				stackAction(ACS_PL_PAYSTOCK);
 			}
+		} else if (info == ACT_RESHUFFLECOST) {
+			player.addToClock(content[0]);
+			stackAction(ACS_PL_RESHUFFLECOST, content[0]);
 		}
 
 		if (!isSubPhase(SP_LEVELUP)) {
@@ -453,6 +456,9 @@ public abstract class GameClient extends GameSystem {
 			for (int i=0;i<content[0];i++) {
 				stackAction(ACS_OP_PAYSTOCK);
 			}
+		} else if (info == ACT_RESHUFFLECOST) {
+			opponent.addToClock(content[0]);
+			stackAction(ACS_OP_RESHUFFLECOST, content[0]);
 		}
 
 		if (!isSubPhase(SP_LEVELUP)) {

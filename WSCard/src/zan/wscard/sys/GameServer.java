@@ -69,6 +69,10 @@ public abstract class GameServer extends GameSystem {
 		Player player = getPlayer(cid);
 		Player opponent = getOtherPlayer(cid);
 
+		boolean[] reshuffle = new boolean[PL_NUM];
+		reshuffle[PL_A] = false;
+		reshuffle[PL_B] = false;
+
 		if (info == ACT_NONE) {
 			// NONE
 		} else if (info == ACT_ENDTURN) {
@@ -77,7 +81,9 @@ public abstract class GameServer extends GameSystem {
 			player.doStandUp();
 		} else if (info == ACT_DRAWTOHAND) {
 			for (int i=0;i<content.length;i++) {
-				if (content[i] != CARD_NONE) {
+				if (content[i] == CARD_NONE) {
+					reshuffle[cid] = true;
+				} else if (content[i] != CARD_NONE) {
 					player.addToHand(content[i]);
 					content[i] = 0;
 				}
@@ -108,11 +114,19 @@ public abstract class GameServer extends GameSystem {
 			if (content.length > 0) {
 				if (opponent.getCardData(content[content.length-1]).type == CARD_CLIMAX) {
 					for (int i=0;i<content.length;i++) {
-						if (content[i] != CARD_NONE) opponent.addToWaitingRoom(content[i]);
+						if (content[i] == CARD_NONE) {
+							reshuffle[(cid == PL_A)?PL_B:PL_A] = true;
+						} else {
+							opponent.addToWaitingRoom(content[i]);
+						}
 					}
 				} else {
 					for (int i=0;i<content.length;i++) {
-						if (content[i] != CARD_NONE) opponent.addToClock(content[i]);
+						if (content[i] == CARD_NONE) {
+							reshuffle[(cid == PL_A)?PL_B:PL_A] = true;
+						} else {
+							opponent.addToClock(content[i]);
+						}
 					}
 				}
 			} else {
@@ -130,18 +144,32 @@ public abstract class GameServer extends GameSystem {
 			attackInfo.clear();
 		} else if (info == ACT_ENCORE) {
 			for (int i=0;i<content.length;i++) {
-				player.payStock(3);
 				player.setCardState(content[0], CS_REST);
 			}
 		} else if (info == ACT_CLEANUP) {
 			player.doCleanUp();
 		} else if (info == ACT_LEVELUP) {
 			player.doLevelUp(content[0]);
+		} else if (info == ACT_PAYSTOCK) {
+			player.payStock(content[0]);
+		} else if (info == ACT_RESHUFFLECOST) {
+			// NONE
 		}
 
 		StringBuilder m = new StringBuilder().append(MSG_INFO).append(" ").append(cid).append(" ").append(info);
 		for (int i=0;i<content.length;i++) m.append(" ").append(content[i]);
 		sendToAllClients(m.toString());
+
+		if (reshuffle[cid]) {
+			int reshufflecost = player.drawCard();
+			player.addToClock(reshufflecost);
+			sendToAllClients(MSG_INFO, cid, ACT_RESHUFFLECOST, reshufflecost);
+		}
+		if (reshuffle[(cid == PL_A)?PL_B:PL_A]) {
+			int reshufflecost = opponent.drawCard();
+			opponent.addToClock(reshufflecost);
+			sendToAllClients(MSG_INFO, (cid == PL_A)?PL_B:PL_A, ACT_RESHUFFLECOST, reshufflecost);
+		}
 
 		if (info == ACT_ENDTURN) {
 			if (isState(GS_FIRSTDRAW)) {
