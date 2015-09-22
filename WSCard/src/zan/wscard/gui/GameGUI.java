@@ -49,8 +49,6 @@ public class GameGUI {
 	private double mouseX = 0.0;
 	private double mouseY = 0.0;
 
-	private int winner = PL_NONE;
-
 	public GameGUI(GameClient client) {
 		gameClient = client;
 
@@ -809,11 +807,11 @@ public class GameGUI {
 			else if (gameClient.isPhase(GP_ENCORE)) TextManager.renderText(sp, "Encore Phase", "defont");
 			else if (gameClient.isPhase(GP_END)) TextManager.renderText(sp, "End Phase", "defont");
 			sp.popMatrix();
-		} else if (gameClient.isState(GS_END) && winner != PL_NONE) {
+		} else if (gameClient.isState(GS_END) && gameClient.getWinner() != PL_NONE) {
 			sp.pushMatrix();
 			sp.translate(-400.0, 288.0, 0.0);
 			sp.scale(12.0, 12.0, 1.0);
-			if (winner == gameClient.getClientID()) TextManager.renderText(sp, "YOU HAVE WON!", "defont");
+			if (gameClient.getWinner() == gameClient.getClientID()) TextManager.renderText(sp, "YOU HAVE WON!", "defont");
 			else TextManager.renderText(sp, "YOU HAVE LOST!", "defont");
 			sp.popMatrix();
 		}

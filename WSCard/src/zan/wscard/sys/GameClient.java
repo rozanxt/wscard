@@ -20,6 +20,8 @@ public abstract class GameClient extends GameSystem {
 	private int subPhase = SP_END;
 	private int storedSubPhase = SP_WAIT;
 
+	private int gameWinner = PL_NONE;
+
 	private AttackInfo attackInfo = new AttackInfo();
 	private ArrayList<String> actionStack = new ArrayList<String>();
 
@@ -185,23 +187,25 @@ public abstract class GameClient extends GameSystem {
 				else if (isSubPhase(SP_END)) stackAction(ACS_ENDTURN);
 			}
 		} else if (isState(GS_GAME)) {
-			if (type == ANS_DRAW) {
-				if (isPhase(GP_DRAW)) {
-					doDrawToHand(content);
-					stackAction(ACS_PHASE, GP_CLOCK);
-				} else if (isPhase(GP_CLOCK)) {
-					doDrawToHand(content);
-					stackAction(ACS_PHASE, GP_MAIN);
-				} else if (isPhase(GP_ATTACK) && isSubPhase(SP_ATTACK_TRIGGER)) {
-					doDrawTrigger(content);
-					setSubPhase(SP_ATTACK_DAMAGE);
-					doRequestDamage();
-				}
-			} else if (type == ANS_DEALDAMAGE) {
-				if (isPhase(GP_ATTACK) && isSubPhase(SP_ATTACK_DAMAGE)) {
-					doDealDamage(content);
-					setSubPhase(SP_ATTACK_BATTLE);
-					doBattle();
+			if (isInTurn()) {
+				if (type == ANS_DRAW) {
+					if (isPhase(GP_DRAW)) {
+						doDrawToHand(content);
+						stackAction(ACS_PHASE, GP_CLOCK);
+					} else if (isPhase(GP_CLOCK)) {
+						doDrawToHand(content);
+						stackAction(ACS_PHASE, GP_MAIN);
+					} else if (isPhase(GP_ATTACK) && isSubPhase(SP_ATTACK_TRIGGER)) {
+						doDrawTrigger(content);
+						setSubPhase(SP_ATTACK_DAMAGE);
+						doRequestDamage();
+					}
+				} else if (type == ANS_DEALDAMAGE) {
+					if (isPhase(GP_ATTACK) && isSubPhase(SP_ATTACK_DAMAGE)) {
+						doDealDamage(content);
+						setSubPhase(SP_ATTACK_BATTLE);
+						doBattle();
+					}
 				}
 			}
 		}
@@ -312,6 +316,9 @@ public abstract class GameClient extends GameSystem {
 			stackAction(ACS_PL_LEVELUP, content[0]);
 			if (!player.readyForLevelUp() && !opponent.readyForLevelUp()) {
 				stackAction(ACS_RESTORESUBPHASE);
+			}
+			if (player.isDefeated()) {
+				sendToServer(MSG_DEFEAT);
 			}
 		}
 
@@ -462,6 +469,8 @@ public abstract class GameClient extends GameSystem {
 			} else {
 				processOpponentInfo(tkns[2], Arrays.copyOfRange(tkns, 3, tkns.length));
 			}
+		} else if (tkns[0] == MSG_WINNER) {
+			gameWinner = tkns[1];
 		}
 	}
 
@@ -516,6 +525,10 @@ public abstract class GameClient extends GameSystem {
 	public String getAction() {
 		if (actionStack.isEmpty()) return null;
 		return actionStack.remove(0);
+	}
+
+	public int getWinner() {
+		return gameWinner;
 	}
 
 	private void sendArrayListToServer(int msg, int type, ArrayList<Integer> data) {

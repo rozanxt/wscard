@@ -46,6 +46,7 @@ public class Player {
 	}
 
 	public int drawCard() {
+		if (playerDeck.isEmpty()) return CARD_NONE;
 		return playerDeck.remove(0);
 	}
 
@@ -131,6 +132,10 @@ public class Player {
 	public boolean hasReversedCards() {
 		for (int i=0;i<3;i++) if (playerCardState[i] == CS_REVERSE) return true;
 		return false;
+	}
+
+	public boolean isDefeated() {
+		return (playerLevel.size() >= 4);
 	}
 
 	public int getHandCard(int hand) {return playerHand.get(hand);}

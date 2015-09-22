@@ -52,7 +52,7 @@ public class AttackInfo {
 		} else if (attackType == ATK_SIDE) {
 			damage -= defenderCard.level;
 		}
-		return damage;
+		return Math.max(0, damage);
 	}
 
 	public int getBattleResult() {

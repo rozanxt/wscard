@@ -184,6 +184,9 @@ public abstract class GameServer extends GameSystem {
 				else if (tkns[1] == REQ_DEALDAMAGE) doDealDamage(cid, tkns[2]);
 			} else if (tkns[0] == MSG_ACTION) {
 				doInformAction(cid, tkns[1], Arrays.copyOfRange(tkns, 2, tkns.length));
+			} else if (tkns[0] == MSG_DEFEAT) {
+				sendState(GS_END);
+				sendToAllClients(MSG_WINNER, (cid == PL_A)?PL_B:PL_A);
 			}
 		} else if (isState(GS_END)) {
 			// TODO
