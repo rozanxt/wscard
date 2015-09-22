@@ -20,6 +20,7 @@ public abstract class GameClient extends GameSystem {
 	private int subPhase = SP_END;
 	private int storedSubPhase = SP_WAIT;
 
+	private boolean firstTurn = false;
 	private int gameWinner = PL_NONE;
 
 	private AttackInfo attackInfo = new AttackInfo();
@@ -294,7 +295,12 @@ public abstract class GameClient extends GameSystem {
 				stackAction(ACS_PL_REVERSE, attackInfo.getAttackerStage());
 			}
 			attackInfo.clear();
-			stackAction(ACS_SUBPHASE, SP_START);
+			if (isFirstTurn()) {
+				firstTurn = false;
+				endAttack();
+			} else {
+				stackAction(ACS_SUBPHASE, SP_START);
+			}
 		} else if (info == ACT_ENCORE) {	// TODO Separate messages pay stock and encore
 			for (int i=0;i<content.length;i++) {
 				player.setCardState(content[i], CS_REST);
@@ -486,6 +492,8 @@ public abstract class GameClient extends GameSystem {
 			syncPhase(tkns[1]);
 		} else if (tkns[0] == MSG_TURN) {
 			syncTurn(tkns[1]);
+		} else if (tkns[0] == MSG_FIRSTTURN) {
+			firstTurn = true;
 		} else if (tkns[0] == MSG_ANSWER) {
 			processAnswer(tkns[1], Arrays.copyOfRange(tkns, 2, tkns.length));
 		} else if (tkns[0] == MSG_INFO) {
@@ -534,7 +542,10 @@ public abstract class GameClient extends GameSystem {
 	public Player getPlayer() {return player;}
 	public Player getOpponent() {return opponent;}
 
+	public int getWinner() {return gameWinner;}
+
 	public boolean isInTurn() {return isTurn(clientID);}
+	public boolean isFirstTurn() {return firstTurn;}
 
 	public void endTurn() {sendToServer(MSG_ACTION + " " + ACT_ENDTURN);}
 	public void setSubPhase(int phase) {subPhase = phase;}
@@ -552,15 +563,6 @@ public abstract class GameClient extends GameSystem {
 		return actionStack.remove(0);
 	}
 
-	public int getWinner() {
-		return gameWinner;
-	}
-
-	private void sendArrayListToServer(int msg, int type, ArrayList<Integer> data) {
-		StringBuilder act = new StringBuilder().append(msg).append(" ").append(type);
-		for (int i=0;i<data.size();i++) act.append(" ").append(data.get(i));
-		sendToServer(act.toString());
-	}
 	private void sendArrayToServer(int msg, int type, int[] data) {
 		StringBuilder act = new StringBuilder().append(msg).append(" ").append(type);
 		for (int i=0;i<data.length;i++) act.append(" ").append(data[i]);

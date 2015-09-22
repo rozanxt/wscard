@@ -11,12 +11,13 @@ public abstract class GameSystem {
 	public static final int MSG_STATE = 4;
 	public static final int MSG_PHASE = 5;
 	public static final int MSG_TURN = 6;
-	public static final int MSG_REQUEST = 7;
-	public static final int MSG_ANSWER = 8;
-	public static final int MSG_ACTION = 9;
-	public static final int MSG_INFO = 10;
-	public static final int MSG_DEFEAT = 11;
-	public static final int MSG_WINNER = 12;
+	public static final int MSG_FIRSTTURN = 7;
+	public static final int MSG_REQUEST = 8;
+	public static final int MSG_ANSWER = 9;
+	public static final int MSG_ACTION = 10;
+	public static final int MSG_INFO = 11;
+	public static final int MSG_DEFEAT = 12;
+	public static final int MSG_WINNER = 13;
 
 	public static final int REQ_NONE = 0;
 	public static final int REQ_DRAW = 1;

@@ -31,10 +31,14 @@ public abstract class GameServer extends GameSystem {
 		playerB.setInfo(infoB);
 	}
 
+	private void doFirstTurn() {
+		setTurn(Utility.getRandom().nextInt(2));
+		sendToAllClients(MSG_TURN, playerTurn);
+		sendToClient(playerTurn, MSG_FIRSTTURN);
+	}
 	private void doChangeTurn() {
 		if (isTurn(PL_A)) setTurn(PL_B);
 		else if (isTurn(PL_B)) setTurn(PL_A);
-		else setTurn(PL_A);	// TODO Randomize first turn
 		sendToAllClients(MSG_TURN, playerTurn);
 	}
 	private void doDrawCards(int cid, int num) {
@@ -181,7 +185,7 @@ public abstract class GameServer extends GameSystem {
 					ready[PL_A] = false;
 					ready[PL_B] = false;
 					sendState(GS_GAME);
-					doChangeTurn();
+					doFirstTurn();
 				}
 			} else if (isState(GS_GAME)) {
 				if (isTurn(cid)) doChangeTurn();

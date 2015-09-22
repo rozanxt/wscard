@@ -38,7 +38,6 @@ public class GameGUI {
 	private ArrayList<CardObject> activeCards = new ArrayList<CardObject>();
 	private CardObject hoveredCard = null;
 	private CardObject selectedCard = null;
-	private CardObject focusedCard = null;
 	private CardObject heldCard = null;
 	private Vec2D heldOffset = new Vec2D(0.0, 0.0);
 
