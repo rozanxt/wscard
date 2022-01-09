@@ -38,7 +38,7 @@ public class DeckField extends CardField {
 				deckCards.get(i).hide = true;
 				deckCards.get(i).update();
 			}
-			if (!remove.isEmpty()) deckCards.remove(remove);
+			if (!remove.isEmpty()) deckCards.removeAll(remove);
 		}
 	}
 
