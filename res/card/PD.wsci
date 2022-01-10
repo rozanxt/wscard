@@ -1,0 +1,319 @@
+ID: PD-101
+NAME: "Next to you" Hatsune Miku
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 1
+COST: 0
+POWER: 3000
+SOUL: 1
+TRIGGER: -
+TRAIT: Music
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] ASSIST All your Characters in front of this gain +500 Power.[S][Rest this] Choose 1 of your ::Music:: Characters, and that Character gains +1000 Power for the turn. 
+FLAVORTEXT: I want to always be next to you... 
+IMAGE: res/img/card/PD/PD-101.jpg
+
+ID: PD-102
+NAME: "To the best stage" Hatsune Miku
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 2
+COST: 1
+POWER: 8000
+SOUL: 1
+TRIGGER: Soul	
+TRAIT: Music
+RARITY: TD 
+SIDE: S
+CARDTEXT: [A] When this is placed from hand to the Stage, if you have 2 or more other ::Music:: Characters, this gains +2000 Power for the turn. 
+FLAVORTEXT: I feel like I can fly / to the best stage--
+IMAGE: res/img/card/PD/PD-102.jpg
+
+ID: PD-103
+NAME: "Black Rock Shooter" Hatsune Miku
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 1
+COST: 0
+POWER: 5000
+SOUL: 1
+TRIGGER: -
+TRAIT: Music
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When this attacks, if "Black Rock Shooter" is in the Climax Zone, this gains +3000 Power for the turn. 
+FLAVORTEXT: Black Rock Shooter / you're not alone / it's okay to cry out loud 
+IMAGE: res/img/card/PD/PD-103.jpg
+
+ID: PD-104a
+NAME: Hatsune Miku "Heartbeat"
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 2
+COST: 2
+POWER: 8500
+SOUL: 2
+TRIGGER: Soul
+TRAIT: Music, Net
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When this attacks, if "ODDS & ENDS" is in the Climax Zone, all your Characters gain +2000 Power for the turn. 
+FLAVORTEXT: -
+IMAGE: res/img/card/PD/PD-104a.jpg
+
+ID: PD-104b
+NAME: Hatsune Miku "Heartbeat"
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 2
+COST: 2
+POWER: 8500
+SOUL: 2
+TRIGGER: Soul
+TRAIT: Music, Net
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When this attacks, if "ODDS & ENDS" is in the Climax Zone, all your Characters gain +2000 Power for the turn. 
+FLAVORTEXT: I can definitely become your strength / thus I try to sing / that's right yours / words only for you 
+IMAGE: res/img/card/PD/PD-104b.jpg
+
+ID: PD-105
+NAME: Hatsune Miku "Original"
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 3
+COST: 2
+POWER: 10000
+SOUL: 2
+TRIGGER: Soul
+TRAIT: Music
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When this is placed from hand to the Stage, all your Characters gain +2000 Power for the turn.[S] [(1)] Choose 1 of your ::Music:: Characters, and that Character gains +2000 Power for the turn. 
+FLAVORTEXT: See, the new stage ahead 
+IMAGE: res/img/card/PD/PD-105.jpg
+
+ID: PD-106
+NAME: Black Rock Shooter
+TYPE: CLIMAX
+COLOR: GREEN
+LEVEL: 0
+COST: 0
+POWER: 0
+SOUL: 0
+TRIGGER: Soul, Soul
+TRAIT: -
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] All your Characters gain +2 Soul. 
+FLAVORTEXT: Black Rock Shooter / is watching over me / my story / that begins now
+IMAGE: res/img/card/PD/PD-106.jpg
+
+ID: PD-107
+NAME: ODDS & ENDS
+TYPE: CLIMAX
+COLOR: GREEN
+LEVEL: 0
+COST: 0
+POWER: 0
+SOUL: 0
+TRIGGER: Stock
+TRAIT: -
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] All your Characters gain +1000 Power and +1 Soul. 
+FLAVORTEXT: Words become songs / and travels the world again / just for you
+IMAGE: res/img/card/PD/PD-107.jpg
+
+ID: PD-T01
+NAME: Kagamine Len "Append"
+TYPE: CHARA
+COLOR: YELLOW
+LEVEL: 0
+COST: 0
+POWER: 2500
+SOUL: 1
+TRIGGER: -
+TRAIT: Music
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] During your turn, this gains +1000 Power. 
+FLAVORTEXT: -
+IMAGE: res/img/card/PD/PD-T01.jpg
+
+ID: PD-T02
+NAME: Kagamine Len "Tricker"
+TYPE: CHARA
+COLOR: YELLOW
+LEVEL: 0
+COST: 0
+POWER: 2500
+SOUL: 1
+TRIGGER: -
+TRAIT: Music
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When this is placed from hand to the Stage, this gains +1500 Power for the turn. 
+FLAVORTEXT: -
+IMAGE: res/img/card/PD/PD-T02.jpg
+
+ID: PD-T03
+NAME: Kagamine Rin "Future Style" 
+TYPE: CHARA
+COLOR: YELLOW
+LEVEL: 0
+COST: 0
+POWER: 3000
+SOUL: 1
+TRIGGER: -
+TRAIT: Music
+RARITY: TD
+SIDE: S
+CARDTEXT: -
+FLAVORTEXT: -
+IMAGE: res/img/card/PD/PD-T03.jpg
+
+ID: PD-T04
+NAME: "Continuation of Dream" Kagamine Rin
+TYPE: CHARA
+COLOR: YELLOW
+LEVEL: 1
+COST: 1
+POWER: 7000
+SOUL: 1
+TRIGGER: -
+TRAIT: Music
+RARITY: TD
+SIDE: S
+CARDTEXT: -
+FLAVORTEXT: You believed in me like this 
+IMAGE: res/img/card/PD/PD-T04.jpg
+
+ID: PD-T05
+NAME: "Continuation of Dream" Kagamine Len
+TYPE: CHARA
+COLOR: YELLOW
+LEVEL: 2
+COST: 1
+POWER: 8500
+SOUL: 1
+TRIGGER: Soul
+TRAIT: Music
+RARITY: TD
+SIDE: S
+CARDTEXT: -
+FLAVORTEXT: Beliefs become one / residing warmly in my heart / and then miracle 
+IMAGE: res/img/card/PD/PD-T05.jpg
+
+ID: PD-T06
+NAME: Melancholic
+TYPE: EVENT
+COLOR: YELLOW
+LEVEL: 1
+COST: 1
+POWER: 0
+SOUL: 0
+TRIGGER: -
+TRAIT: -
+RARITY: TD
+SIDE: S
+CARDTEXT: Search your Library for up to 1 ::Music:: Character, reveal it, and put it in your hand. Shuffle your Library. 
+FLAVORTEXT: You are the melancholist. 
+IMAGE: res/img/card/PD/PD-T06.jpg
+
+ID: PD-T07
+NAME: Tengaku
+TYPE: CLIMAX
+COLOR: YELLOW
+LEVEL: 0
+COST: 0
+POWER: 0
+SOUL: 0
+TRIGGER: Soul, Soul
+TRAIT: -
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When this is placed from hand to the Climax Zone, draw a card, and choose 1 of your Characters, and that Character gains +2000 Power and +1 Soul for the turn. 
+FLAVORTEXT: Now / blossoming crazy leaves decorate the world 
+IMAGE: res/img/card/PD/PD-T07.jpg
+
+ID: PD-T08
+NAME: Hatsune Miku "Pansy"
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 0
+COST: 0
+POWER: 500
+SOUL: 1
+TRIGGER: -
+TRAIT: Music, Plant
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] ASSIST All your Characters in front of this gain +500 Power. [S] [(1)] Choose 1 of your ::Music:: Characters, and that Character gains +500 Power for the turn. 
+FLAVORTEXT: Time passing by / comparing sighs 
+IMAGE: res/img/card/PD/PD-T08.jpg
+
+ID: PD-T09
+NAME: Hatsune Miku "Deep Sky"
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 0
+COST: 0
+POWER: 3000
+SOUL: 1
+TRIGGER: -
+TRAIT: Music, Glasses
+RARITY: TD
+SIDE: S
+CARDTEXT: -
+FLAVORTEXT: -
+IMAGE: res/img/card/PD/PD-T09.jpg
+
+ID: PD-T10
+NAME: Hatsune Miku "Honey Whip"
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 1
+COST: 0
+POWER: 5500
+SOUL: 1
+TRIGGER: -
+TRAIT: Music
+RARITY: TD
+SIDE: S
+CARDTEXT: -
+FLAVORTEXT: -
+IMAGE: res/img/card/PD/PD-T10.jpg
+
+ID: PD-T11
+NAME: Hatsune Miku "FOnewear Style"
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 1
+COST: 1
+POWER: 6500
+SOUL: 1
+TRIGGER: -
+TRAIT: Music, Online Game
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] ENCORE [Discard a Character card from your hand to the Waiting Room] 
+FLAVORTEXT: -
+IMAGE: res/img/card/PD/PD-T11.jpg
+
+ID: PD-T12
+NAME: "Full Power Mikku Miku" Hatsune Miku
+TYPE: CHARA
+COLOR: GREEN
+LEVEL: 2
+COST: 1
+POWER: 2500
+SOUL: 1
+TRIGGER: Soul
+TRAIT: -
+RARITY: TD
+SIDE: S
+CARDTEXT: [S] [COUNTER] BACKUP 3000, Level 2 [(1) Discard this from your hand to the Waiting Room]
+FLAVORTEXT: I want to sing / my overwhelming feelings-- 
+IMAGE: res/img/card/PD/PD-T12.jpg

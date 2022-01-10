@@ -1,0 +1,319 @@
+ID: LH-T01
+NAME: Serara, Druid
+TYPE: CHARA
+COLOR: RED
+LEVEL: 0
+COST: 0
+POWER: 1000
+SOUL: 1
+TRIGGER: -
+TRAIT: Magic
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] ASSIST All your Characters in front of this gain +500 Power
+FLAVORTEXT: Hurry up.....and recover!
+IMAGE: res/img/card/LH/LH-T01.jpg
+
+ID: LH-T02
+NAME: Akatsuki
+TYPE: CHARA
+COLOR: RED
+LEVEL: 0
+COST: 0
+POWER: 1500
+SOUL: 1
+TRIGGER: -
+TRAIT: Weapon, Ninja
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] [Put a Marker from under this in the Waiting Room] When this attacks, you may pay cost. If so, choose 1 of your Opponent's Level 0 or lower Characters in the Front Row and put it in the Waiting Room. [S] [Rest this] If there's no Maker under this, put the top card of your Library under this as Marker
+FLAVORTEXT: I shall be Master's Ninja and guard around you
+IMAGE: res/img/card/LH/LH-T02.jpg
+
+ID: LH-T03
+NAME: Marielle Using Telepathy
+TYPE: CHARA
+COLOR: RED
+LEVEL: 0
+COST: 0
+POWER: 1500
+SOUL: 1
+TRIGGER: -
+TRAIT: Magic
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] [(2)] When this is placed from hand to the Stage, you may pay cost. If so, choose a character in your Waiting Room and return it to your hand.
+FLAVORTEXT: Shiro-bou! Well Done! Where are you right now?
+IMAGE: res/img/card/LH/LH-T03.jpg
+
+ID: LH-T04
+NAME: Akatsuki, Actually A Pretty Girl
+TYPE: CHARA
+COLOR: RED
+LEVEL: 0
+COST: 0
+POWER: 3000
+SOUL: 1
+TRIGGER: -
+TRAIT: Weapon, Ninja
+RARITY: TD
+SIDE: S
+CARDTEXT: -
+FLAVORTEXT: Naotsugu: "Wow......She's pretty, and real"
+IMAGE: res/img/card/LH/LH-T04.jpg
+
+ID: LH-T05
+NAME: Akatsuki, Blushing
+TYPE: CHARA
+COLOR: RED
+LEVEL: 1
+COST: 0
+POWER: 4500
+SOUL: 1
+TRIGGER: -
+TRAIT: Weapon, Ninja
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] If you have 3 or more Characters with either ::Weapon:: and/or ::Magic::, this gains +1500
+FLAVORTEXT: I, I should be the one saying......T, thank you
+IMAGE: res/img/card/LH/LH-T05.jpg
+
+ID: LH-T06
+NAME: Henrietta, Treasurer of Crescent Moon Alliance
+TYPE: CHARA
+COLOR: RED
+LEVEL: 2
+COST: 1
+POWER: 2500
+SOUL: 1
+TRIGGER: Soul
+TRAIT: Weapon, Glasses
+RARITY: TD
+SIDE: S
+CARDTEXT: [S] [Counter] BACKUP 3000, Level 2 [(1) Discard this card from hand to the waiting room]
+FLAVORTEXT: Marie, stop that
+IMAGE: res/img/card/LH/LH-T06.jpg
+
+ID: LH-T07
+NAME: Marielle, Representative of Crescent Moon Alliance
+TYPE: CHARA
+COLOR: RED
+LEVEL: 2
+COST: 1
+POWER: 4000
+SOUL: 1
+TRIGGER: Soul
+TRAIT: Magic
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] ASSIST All your Characters in front of this gains +1000 Power. [S] [(1)] Choose 1 of your ::Weapon:: Characters, and that Character gains +1500 for the turn.
+FLAVORTEXT: Oh, Shiro-Bou? You found yourself a girlfriend~?
+IMAGE: res/img/card/LH/LH-T07.jpg
+
+ID: LH-T08
+NAME: Akatsuki Angered
+TYPE: CHARA
+COLOR: RED
+LEVEL: 2
+COST: 2
+POWER: 9000
+SOUL: 2
+TRIGGER: Soul
+TRAIT: Weapon, Ninja
+RARITY: TD
+SIDE: S
+CARDTEXT: -
+FLAVORTEXT: Is my master thinking of me as a child?
+IMAGE: res/img/card/LH/LH-T08.jpg
+
+ID: LH-T09
+NAME: Assassinate
+TYPE: CLIMAX
+COLOR: RED
+LEVEL: 0
+COST: 0
+POWER: 0
+SOUL: 0
+TRIGGER: 2 Soul
+TRAIT: -
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] All your Characters gain +2 Soul
+FLAVORTEXT: Assassinate!
+IMAGE: res/img/card/LH/LH-T09.jpg
+
+ID: LH-T10
+NAME: Nyanta the Cook
+TYPE: CHARA
+COLOR: BLUE
+LEVEL: 0
+COST: 0
+POWER: 2500
+SOUL: 1
+TRIGGER: -
+TRAIT: Weapon, Cook
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When this is placed from hand to the stage, look at the top card of your Library and put it either on top or bottom of the Library
+FLAVORTEXT: My sub job is <Cook>
+IMAGE: res/img/card/LH/LH-T10.jpg
+
+ID: LH-T11
+NAME: Shiroe, Riding a Griffon
+TYPE: CHARA
+COLOR: BLUE
+LEVEL: 0
+COST: 0
+POWER: 3000
+SOUL: 1
+TRIGGER: -
+TRAIT: Magic, Glasses
+RARITY: TD
+SIDE: S
+CARDTEXT: -
+FLAVORTEXT: That's right, hang on tight.....hey, don't grab my belly fat!
+IMAGE: res/img/card/LH/LH-T11.jpg
+
+ID: LH-T12
+NAME: Nyanta, Swashbuckler
+TYPE: CHARA
+COLOR: BLUE
+LEVEL: 1
+COST: 0
+POWER: 5000
+SOUL: 1
+TRIGGER: -
+TRAIT: Weapon, Cook
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When "Delicate Combination" is placed in the Climax Zone, if you have another Character with "Shiroe" in name, this gains +4000 Power for the turn.
+FLAVORTEXT: It's been a while......since I've eaten this much
+IMAGE: res/img/card/LH/LH-T12.jpg
+
+ID: LH-T13
+NAME: Naotsugu, First Actual Battle
+TYPE: CHARA
+COLOR: BLUE
+LEVEL: 1
+COST: 0
+POWER: 5500
+SOUL: 1
+TRIGGER: -
+TRAIT: Weapon
+RARITY: TD
+SIDE: S
+CARDTEXT: -
+FLAVORTEXT: I don't get this, but okay! Shield Swing!
+IMAGE: res/img/card/LH/LH-T13.jpg
+
+ID: LH-T14
+NAME: Shiroe, Confident Look
+TYPE: CHARA
+COLOR: BLUE
+LEVEL: 1
+COST: 1
+POWER: 6500
+SOUL: 1
+TRIGGER: -
+TRAIT: Magic, Glasses
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] ENCORE [Discard a Character card from hand to the Waiting Room]
+FLAVORTEXT: We...will win
+IMAGE: res/img/card/LH/LH-T14.jpg
+
+ID: LH-T15
+NAME: Shiroe
+TYPE: CHARA
+COLOR: BLUE
+LEVEL: 2
+COST: 1
+POWER: 8000
+SOUL: 1
+TRIGGER: Soul
+TRAIT: Magic, Glasses
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] [Put the top card of your Library in Clock] When the Battle Opponent of this becomes Reversed, you may pay cost. If so, draw a card.
+FLAVORTEXT: This is not a game, this is our reality right now!
+IMAGE: res/img/card/LH/LH-T15.jpg
+
+ID: LH-T16
+NAME: Naotsugu
+TYPE: CHARA
+COLOR: BLUE
+LEVEL: 2
+COST: 1
+POWER: 8000
+SOUL: 1
+TRIGGER: Soul
+TRAIT: Weapon
+RARITY: TD
+SIDE: S
+CARDTEXT: [S] [Rest 1 of your ::Magic:: Characters] This gains +1000 for the turn.
+FLAVORTEXT: I'm Naotsugu, a Guardian. Open or sullen, pleased to meet you!
+IMAGE: res/img/card/LH/LH-T16.jpg
+
+ID: LH-T17
+NAME: Shiroe, Enchanter
+TYPE: CHARA
+COLOR: BLUE
+LEVEL: 3
+COST: 2
+POWER: 10000
+SOUL: 2
+TRIGGER: Soul
+TRAIT: Magic, Glasses
+RARITY: TD
+SIDE: S
+CARDTEXT: [C] If there are 5 or more cards in your hand, this gains +1500 Power and the following ability. "[C] During battles involving this, your Opponent may not play BACKUP from Hand."
+FLAVORTEXT: Enchanter has weak attacks. But they can hinder enemy attacks as well as enhancing the power of allies.
+IMAGE: res/img/card/LH/LH-T17.jpg
+
+ID: LH-T18
+NAME: Enchanter's Support
+TYPE: EVENT
+COLOR: BLUE
+LEVEL: 2
+COST: 1
+POWER: 0
+SOUL: 0
+TRIGGER: -
+TRAIT: -
+RARITY: TD
+SIDE: S
+CARDTEXT: Choose 1 of your Opponent's Level 3 or lower Characters. That Character does not Stand during your Opponent's next Stand Phase. Choose 1 of your Characters, and that Character gains +2000 Power for the turn.
+FLAVORTEXT: First lower the accuracy and evasion of the enemies, apply the confusion bad status, and then enhance the attack power of allies' weapons....!
+IMAGE: res/img/card/LH/LH-T18.jpg
+
+ID: LH-T19
+NAME: Delicate Combination
+TYPE: CLIMAX
+COLOR: BLUE
+LEVEL: 0
+COST: 0
+POWER: 0
+SOUL: 0
+TRIGGER: 2 Soul
+TRAIT: -
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When this is placed from hand to the Climax Zone, draw a card, choose 1 of your Characters, and that Character gains +2000 Power and +1 Soul for the turn.
+FLAVORTEXT: "Are we ready, Shiroe-cchi" "Let's go, Leader Nyanta"
+IMAGE: res/img/card/LH/LH-T19.jpg
+
+ID: LH-T20
+NAME: First Loot
+TYPE: CLIMAX
+COLOR: BLUE
+LEVEL: 0
+COST: 0
+POWER: 0
+SOUL: 0
+TRIGGER: 2 Soul
+TRAIT: -
+RARITY: TD
+SIDE: S
+CARDTEXT: [A] When this is placed from hand to the Climax Zone, choose up to 1 BLUE card in your Waiting Room and put it in Stock, and all your characters gain +1 Soul for the Turn.
+FLAVORTEXT: It's our first. The first adventurers of this world.....to look at this sight
+IMAGE: res/img/card/LH/LH-T20.jpg
